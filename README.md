@@ -1,11 +1,13 @@
-# File-Crawler
-Index and search local files.
+# File-Search-Engine
+A simple GUI based utility to index and search local files. So... perhaps the GUI is a bit unnecessary, but why not. 
 
-I plan on cleaning up the code down the road, so stay tuned. The current version uses a GUI. You can conver this into an executable with PyInstaller. I'll add a command-line interface version in the future.
+Features:
+- Search options include: 'contains', 'startswith', and 'endswith'
+- **Re-index** saves a local copy of the index for quick re-use. This makes subsequent searches nearly instant.
+- Scope the domain of your search by browsing to a higher level root directory using the **Browse** button.
+- Search results are both printed to screen and exported to a text file in the working directory.
 
-A few notes:
-- An index is saved in the working directory to enable quick searches when updating the index is not needed. I was able to index my laptop with almost 1 million files in under 20 seconds.  
-- The search results are output on the screen and in a text file in the working directory (where you have your py file).  
-- Requires [PySimpleGUI](https://pysimplegui.readthedocs.io/en/latest/) for the GUI `pip install PySimpleGUI`
+  
+**Requirements** [PySimpleGUI](https://pysimplegui.readthedocs.io/en/latest/) for the GUI `pip install PySimpleGUI`
  
  ![demo image](demo.PNG)

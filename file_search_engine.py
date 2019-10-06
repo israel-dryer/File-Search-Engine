@@ -1,23 +1,22 @@
 import os
 import pickle
 import PySimpleGUI as sg 
-sg.ChangeLookAndFeel('Dark')
-
+sg.ChangeLookAndFeel('Black')
 
 class Gui:
     def __init__(self):
-        self.layout = [[sg.Text('Search Term', size=(10,1)), 
-                        sg.Input(size=(45,1), focus=True, key="TERM"), 
-                        sg.Radio('Contains', group_id='choice', key="CONTAINS", default=True), 
-                        sg.Radio('StartsWith', group_id='choice', key="STARTSWITH"), 
-                        sg.Radio('EndsWith', group_id='choice', key="ENDSWITH")],
-                       [sg.Text('Root Path', size=(10,1)), 
-                        sg.Input('C:/', size=(45,1), key="PATH"), 
+        self.layout = [[sg.Text('Search Term', size=(11,1)), 
+                        sg.Input(size=(40,1), focus=True, key="TERM"), 
+                        sg.Radio('Contains', size=(10,1), group_id='choice', key="CONTAINS", default=True), 
+                        sg.Radio('StartsWith', size=(10,1), group_id='choice', key="STARTSWITH"), 
+                        sg.Radio('EndsWith', size=(10,1), group_id='choice', key="ENDSWITH")],
+                       [sg.Text('Root Path', size=(11,1)), 
+                        sg.Input('/..', size=(40,1), key="PATH"), 
                         sg.FolderBrowse('Browse', size=(10,1)), 
                         sg.Button('Re-Index', size=(10,1), key="_INDEX_"), 
                         sg.Button('Search', size=(10,1), bind_return_key=True, key="_SEARCH_")],
                        [sg.Output(size=(100,30))]]
-        self.window = sg.Window('File Search Engine').Layout(self.layout)
+        self.window = sg.Window('File Search Engine', self.layout, element_justification='left')
 
 class SearchEngine:
     def __init__(self):
@@ -108,5 +107,6 @@ def main():
             print(">> Results saved in working directory as search_results.txt.")
 
 
-
-main()            
+if __name__ == '__main__':
+    print('Starting program...')
+    main()            

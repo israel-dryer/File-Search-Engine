@@ -1,54 +1,71 @@
+'''
+  Index and search for local files with this GUI based search engine
+  
+  Author:     Israel Dryer
+  Email:      israel.dryer@gmail.com
+  Modified:   2019-10-07
+  
+'''
 import os
 import pickle
 import PySimpleGUI as sg 
 sg.ChangeLookAndFeel('Black')
 
 class Gui:
+    ''' Create a GUI object '''
+    
     def __init__(self):
-        self.layout = [[sg.Text('Search Term', size=(11,1)), 
-                        sg.Input(size=(40,1), focus=True, key="TERM"), 
-                        sg.Radio('Contains', size=(10,1), group_id='choice', key="CONTAINS", default=True), 
-                        sg.Radio('StartsWith', size=(10,1), group_id='choice', key="STARTSWITH"), 
-                        sg.Radio('EndsWith', size=(10,1), group_id='choice', key="ENDSWITH")],
-                       [sg.Text('Root Path', size=(11,1)), 
-                        sg.Input('/..', size=(40,1), key="PATH"), 
-                        sg.FolderBrowse('Browse', size=(10,1)), 
-                        sg.Button('Re-Index', size=(10,1), key="_INDEX_"), 
-                        sg.Button('Search', size=(10,1), bind_return_key=True, key="_SEARCH_")],
-                       [sg.Output(size=(100,30))]]
-        self.window = sg.Window('File Search Engine', self.layout, element_justification='left')
+        self.layout: list = [
+            [sg.Text('Search Term', size=(11,1)), 
+             sg.Input(size=(40,1), focus=True, key="TERM"), 
+             sg.Radio('Contains', size=(10,1), group_id='choice', key="CONTAINS", default=True), 
+             sg.Radio('StartsWith', size=(10,1), group_id='choice', key="STARTSWITH"), 
+             sg.Radio('EndsWith', size=(10,1), group_id='choice', key="ENDSWITH")],
+            [sg.Text('Root Path', size=(11,1)), 
+             sg.Input('/..', size=(40,1), key="PATH"), 
+             sg.FolderBrowse('Browse', size=(10,1)), 
+             sg.Button('Re-Index', size=(10,1), key="_INDEX_"), 
+             sg.Button('Search', size=(10,1), bind_return_key=True, key="_SEARCH_")],
+            [sg.Output(size=(100,30))]]
+        
+        self.window: object = sg.Window('File Search Engine', self.layout, element_justification='left')
+
 
 class SearchEngine:
-    def __init__(self):
-        self.file_index = [] # directory listing returned by os.walk()
-        self.results = [] # search results returned from search method
-        self.matches = 0 # count of records matched
-        self.records = 0 # count of records searched
+    ''' Create a search engine object '''
 
-    def create_new_index(self, values):
-        ''' create a new index of the root; then save to self.file_index and to pickle file '''
-        root_path = values['PATH']
-        self.file_index = [(root, files) for root, dirs, files in os.walk(root_path) if files]
+    def __init__(self):
+        self.file_index: list = [] # directory listing returned by os.walk()
+        self.results: list = [] # search results returned from search method
+        self.matches: int = 0 # count of records matched
+        self.records: int = 0 # count of records searched
+
+
+    def create_new_index(self, values: dict):
+        ''' Create a new index of the root; then save to self.file_index and to pickle file '''
+        root_path: str = values['PATH']
+        self.file_index: list = [(root, files) for root, dirs, files in os.walk(root_path) if files]
 
         # save index to file
         with open('file_index.pkl','wb') as f:
             pickle.dump(self.file_index, f)
 
+
     def load_existing_index(self):
-        ''' load an existing index into the program '''
+        ''' Load an existing index into the program '''
         try:
             with open('file_index.pkl','rb') as f:
                 self.file_index = pickle.load(f)
         except:
             self.file_index = []
 
-    def search(self, values):
-        ''' search for the term based on teh type in the index;
-            the types of search include: contains, startswith, endswith;
-            save the results to file '''
+
+    def search(self, values: dict):
+        ''' Search for the term based on teh type in the index; the types of search 
+            include: contains, startswith, endswith; save the results to file '''
         self.results.clear()
-        self.matches = 0
-        self.records = 0
+        self.matches: int = 0
+        self.records: int = 0
         term = values['TERM']
 
         # search for matches and count results
@@ -70,18 +87,10 @@ class SearchEngine:
             for row in self.results:
                 f.write(row + '\n')
 
-def test3():
-    ''' test the gui interface'''
-    g = Gui()
-
-    while True:
-        event, values = g.window.Read()
-        print(event, values)
-
-
 def main():
-    g = Gui()
-    s = SearchEngine()
+    ''' The main loop for the program '''
+    g: object = Gui()
+    s: object = SearchEngine()
     s.load_existing_index() # load if exists, otherwise return empty list
 
     while True:

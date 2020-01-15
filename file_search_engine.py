@@ -3,12 +3,13 @@
   
   Author:     Israel Dryer
   Email:      israel.dryer@gmail.com
-  Modified:   2019-10-07
+  Modified:   2020-01-14
   
 '''
 import os
 import pickle
-import PySimpleGUI as sg 
+import PySimpleGUI as sg
+from typing import Dict
 sg.ChangeLookAndFeel('Black')
 
 class Gui:
@@ -35,15 +36,15 @@ class SearchEngine:
     ''' Create a search engine object '''
 
     def __init__(self):
-        self.file_index: list = [] # directory listing returned by os.walk()
-        self.results: list = [] # search results returned from search method
-        self.matches: int = 0 # count of records matched
-        self.records: int = 0 # count of records searched
+        self.file_index = [] # directory listing returned by os.walk()
+        self.results = [] # search results returned from search method
+        self.matches = 0 # count of records matched
+        self.records = 0 # count of records searched
 
 
-    def create_new_index(self, values: dict):
-        ''' Create a new index of the root; then save to self.file_index and to pickle file '''
-        root_path: str = values['PATH']
+    def create_new_index(self, values: Dict[str, str]) -> None:
+        ''' Create a new file index of the root; then save to self.file_index and to pickle file '''
+        root_path = values['PATH']
         self.file_index: list = [(root, files) for root, dirs, files in os.walk(root_path) if files]
 
         # save index to file
@@ -51,8 +52,8 @@ class SearchEngine:
             pickle.dump(self.file_index, f)
 
 
-    def load_existing_index(self):
-        ''' Load an existing index into the program '''
+    def load_existing_index(self) -> None:
+        ''' Load an existing file index into the program '''
         try:
             with open('file_index.pkl','rb') as f:
                 self.file_index = pickle.load(f)
@@ -60,12 +61,12 @@ class SearchEngine:
             self.file_index = []
 
 
-    def search(self, values: dict):
-        ''' Search for the term based on teh type in the index; the types of search 
+    def search(self, values: Dict[str, str]) -> None:
+        ''' Search for the term based on the type in the index; the types of search
             include: contains, startswith, endswith; save the results to file '''
         self.results.clear()
-        self.matches: int = 0
-        self.records: int = 0
+        self.matches = 0
+        self.records = 0
         term = values['TERM']
 
         # search for matches and count results
@@ -89,12 +90,12 @@ class SearchEngine:
 
 def main():
     ''' The main loop for the program '''
-    g: object = Gui()
-    s: object = SearchEngine()
+    g = Gui()
+    s = SearchEngine()
     s.load_existing_index() # load if exists, otherwise return empty list
 
     while True:
-        event, values = g.window.Read()
+        event, values = g.window.read()
 
         if event is None:
             break

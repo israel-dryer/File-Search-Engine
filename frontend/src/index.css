@@ -191,3 +191,71 @@
 .animate-float {
   animation: float 4s ease-in-out infinite;
 }
+
+/* --- New Design Assets --- */
+
+.bg-neural {
+  background-color: hsla(var(--background));
+  background-image:
+    radial-gradient(at 0% 0%, hsla(221, 83%, 53%, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(262, 83%, 58%, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(180, 100%, 50%, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(221, 83%, 53%, 0.15) 0px, transparent 50%);
+  background-size: 150% 150%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.bg-grid-pattern {
+  background-size: 40px 40px;
+  background-image:
+    linear-gradient(to right, hsla(var(--primary), 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, hsla(var(--primary), 0.05) 1px, transparent 1px);
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+}
+
+.card-hover-effect {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transform-style: preserve-3d;
+}
+
+.card-hover-effect:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 0 0 1px hsla(var(--primary), 0.5);
+  /* Glow border */
+}
+
+.bg-picasso {
+  background:
+    radial-gradient(circle at 15% 50%, hsla(221, 83%, 53%, 0.15), transparent 25%),
+    radial-gradient(circle at 85% 30%, hsla(262, 83%, 58%, 0.15), transparent 25%),
+    radial-gradient(circle at 50% 50%, hsla(320, 70%, 50%, 0.1), transparent 50%);
+  filter: blur(40px);
+  animation: pulse-color 10s infinite alternate;
+}
+
+@keyframes pulse-color {
+  0% {
+    filter: blur(40px) hue-rotate(0deg);
+  }
+
+  100% {
+    filter: blur(60px) hue-rotate(30deg);
+  }
+}

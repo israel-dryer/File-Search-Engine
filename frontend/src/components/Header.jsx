@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Settings, Moon, Sun, Box, Cpu, ChevronDown, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AppLogo } from './Logo';
 
 const Header = ({ darkMode, toggleDarkMode, openSettings, activeModel, availableModels = [], onModelChange }) => {
     const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
@@ -19,9 +20,7 @@ const Header = ({ darkMode, toggleDarkMode, openSettings, activeModel, available
             <div className="container grid grid-cols-3 h-16 items-center px-4 max-w-7xl mx-auto relative">
                 {/* Left Section: Logo */}
                 <div className="flex items-center justify-start group cursor-pointer w-fit">
-                    <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 transform-gpu group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300">
-                        <Box className="w-5 h-5 text-primary-foreground" />
-                    </div>
+                    <AppLogo className="w-10 h-10 shadow-lg shadow-primary/20 transform-gpu group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
                     <div className="flex flex-col leading-none ml-3">
                         <span className="text-xl font-extrabold tracking-tighter text-3d py-1 uppercase scale-90 -ml-1">
                             File Search

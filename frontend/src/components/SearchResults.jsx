@@ -70,7 +70,7 @@ const SearchResults = ({ results, aiAnswer }) => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: index * 0.1, ease: "easeOut" }}
                     >
-                        <div className="card-3d rounded-3xl overflow-hidden active:scale-95 transition-transform duration-150">
+                        <div className="card-3d card-hover-effect rounded-3xl overflow-hidden active:scale-95 transition-transform duration-150">
                             {/* File Bar - Elevated 3D header */}
                             {result.file_name && (
                                 <div className="flex items-center justify-between px-6 py-4 bg-muted/40 border-b border-border/50">

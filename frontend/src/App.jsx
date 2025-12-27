@@ -4,6 +4,8 @@ import SearchBar from './components/SearchBar';
 import SearchResults from './components/SearchResults';
 import SearchHistory from './components/SearchHistory';
 import SettingsModal from './components/SettingsModal';
+import AbstractBackground from './components/AbstractBackground';
+import AnimatedText from './components/AnimatedText';
 import axios from 'axios';
 import { History, Sparkles } from 'lucide-react';
 
@@ -141,11 +143,12 @@ function App() {
 
     return (
         <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 transition-colors duration-500 relative">
-            {/* 3D Background Image Layer */}
-            <div className="fixed inset-0 z-[-2] bg-cover bg-center bg-no-repeat opacity-20 dark:opacity-10 transition-opacity duration-1000"
-                style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2672&auto=format&fit=crop")' }}>
-                <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px]" />
-            </div>
+            {/* CSS-Only Background Layer */}
+            {/* CSS-Only Background Layer */}
+            <div className="fixed inset-0 z-[-2] bg-neural dark:opacity-20 transition-opacity duration-1000" />
+            <div className="fixed inset-0 z-[-2] bg-picasso opacity-30" />
+            <div className="fixed inset-0 z-[-1] bg-grid-pattern opacity-50" />
+            <AbstractBackground />
 
             {/* 3D Floating Elements */}
             <div className="fixed inset-0 overflow-hidden -z-10 pointer-events-none">
@@ -190,10 +193,10 @@ function App() {
                                 <span className="text-sm font-semibold tracking-wide uppercase">Hyper-Search Engine</span>
                             </div>
 
-                            <h1 className="text-3d text-5xl md:text-7xl lg:text-8xl tracking-tighter leading-[0.9] py-4 bg-clip-text">
-                                EXPLORE<br />
-                                YOUR DATA
-                            </h1>
+                            <AnimatedText
+                                text="EXPLORE YOUR DATA"
+                                className="text-3d text-5xl md:text-7xl lg:text-8xl tracking-tighter leading-[0.9] py-4 bg-clip-text"
+                            />
 
                             <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto font-medium opacity-80">
                                 Navigate your local filesystem with 3D physical search technology and AI intelligence.

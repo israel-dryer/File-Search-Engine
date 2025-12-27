@@ -16,6 +16,7 @@ class TestAPI(unittest.TestCase):
         mock_config = MagicMock()
         mock_config.get.side_effect = lambda section, key, fallback='': {
             ('General', 'folder'): '/test/folder',
+            ('General', 'folders'): '/test/folder',
             ('APIKeys', 'openai_api_key'): 'sk-test',
             ('LocalLLM', 'model_path'): '/models/gpt.gguf',
             ('LocalLLM', 'provider'): 'local'
@@ -31,7 +32,7 @@ class TestAPI(unittest.TestCase):
         
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data['folder'], '/test/folder')
+        self.assertEqual(data['folders'], ['/test/folder'])
         self.assertEqual(data['auto_index'], True)
         self.assertEqual(data['provider'], 'local')
 
@@ -39,10 +40,10 @@ class TestAPI(unittest.TestCase):
     def test_update_config(self, mock_save_config):
         """Test updating configuration."""
         response = self.client.post("/api/config", json={
-            "folder": "/new/folder",
+            "folders": ["/new/folder"],
             "auto_index": False,
             "openai_api_key": "sk-new",
-            "model_path": "",
+            "local_model_path": "",
             "provider": "openai"
         })
         
@@ -53,8 +54,9 @@ class TestAPI(unittest.TestCase):
     @patch('api.load_config')
     @patch('api.search')
     @patch('api.summarize')
+    @patch('llm_integration.smart_summary') # Correct patch path
     @patch('api.get_embeddings')
-    def test_search_endpoint(self, mock_get_embeddings, mock_summarize, mock_search, mock_load_config):
+    def test_search_endpoint(self, mock_get_embeddings, mock_smart_summary, mock_summarize, mock_search, mock_load_config):
         """Test the search endpoint."""
         # Mock config
         mock_config = MagicMock()
@@ -74,6 +76,7 @@ class TestAPI(unittest.TestCase):
             
             # Mock summary
             mock_summarize.return_value = "Summary"
+            mock_smart_summary.return_value = "Smart Summary"
             
             response = self.client.post("/api/search", json={
                 "query": "test query"
@@ -87,7 +90,7 @@ class TestAPI(unittest.TestCase):
             self.assertIn('ai_answer', data)
             self.assertIn('active_model', data)
             self.assertEqual(len(data['results']), 1)
-            self.assertEqual(data['results'][0]['summary'], "Summary")
+            self.assertEqual(data['results'][0]['summary'], "Smart Summary")
 
     @patch('api.load_config')
     @patch('api.BackgroundTasks.add_task')

@@ -277,17 +277,20 @@ const SettingsModal = ({ isOpen, onClose, onSave }) => {
                                     {config.local_model_type === 'llamacpp' && (
                                         <div className="space-y-2">
                                             <label className="text-sm">Model File Path</label>
-                                            <input
-                                                type="text"
-                                                value={config.local_model_path}
-                                                onChange={(e) => setConfig({ ...config, local_model_path: e.target.value })}
-                                                className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
-                                                placeholder="models/mistral-7b.gguf"
-                                            />
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={config.local_model_path}
+                                                    onChange={(e) => setConfig({ ...config, local_model_path: e.target.value })}
+                                                    className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
+                                                    placeholder="models/mistral-7b.gguf"
+                                                />
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">Select a downloaded model below to auto-fill this.</p>
                                         </div>
                                     )}
 
-                                    <ModelManager />
+                                    <ModelManager onSelectModel={(path) => setConfig({ ...config, local_model_path: path })} />
                                 </div>
                             )}
                         </section>

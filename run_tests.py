@@ -51,6 +51,7 @@ def run_quick_tests():
         'tests.test_search',
         'tests.test_model_manager',
         'tests.test_benchmarks',
+        'tests.test_config_and_edge_cases',
     ]
     
     for module in quick_modules:

@@ -53,10 +53,13 @@ const SearchHistory = ({ onSelectQuery, isOpen, onClose, isMobile }) => {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className={`fixed left-0 top-14 bottom-0 bg-card border-r border-border z-30 ${isMobile ? 'w-full' : 'w-72'}`}
+                className={`fixed left-0 top-16 bottom-0 bg-card/95 backdrop-blur-md border-r border-border z-30 shadow-2xl transition-all duration-300 ${isMobile ? 'w-full' : 'w-72'}`}
             >
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                    <span className="text-sm font-medium">History</span>
+                <div className="flex items-center justify-between px-4 py-4 border-b border-border/50 bg-secondary/20">
+                    <div className="flex items-center gap-2">
+                        <History className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-bold uppercase tracking-wider">Search History</span>
+                    </div>
                     <button onClick={onClose} className="p-1 rounded hover:bg-accent">
                         <X className="w-4 h-4" />
                     </button>

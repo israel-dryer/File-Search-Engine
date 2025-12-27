@@ -20,7 +20,7 @@ app = FastAPI()
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:5175"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -125,6 +125,16 @@ benchmark_status = {
 }
 benchmark_results = None
 
+# Indexing state
+indexing_status = {
+    "running": False,
+    "progress": 0,
+    "current_file": None,
+    "total_files": 0,
+    "processed_files": 0,
+    "error": None
+}
+
 def run_benchmark_task():
     """Background task to run benchmarks."""
     global benchmark_status, benchmark_results
@@ -207,8 +217,8 @@ class SearchResponse(BaseModel):
     active_model: Optional[str] = ""
 
 class ConfigModel(BaseModel):
-    folder: str
-    auto_index: bool
+    folders: List[str] = []
+    auto_index: bool = False
     openai_api_key: Optional[str] = ""
     local_model_path: Optional[str] = ""
     provider: str = "openai"
@@ -216,8 +226,16 @@ class ConfigModel(BaseModel):
 @app.get("/api/config")
 async def get_config():
     config = load_config()
+    # Handle both old 'folder' and new 'folders' format
+    folder = config.get('General', 'folder', fallback='')
+    folders_str = config.get('General', 'folders', fallback='')
+    
+    folders = [f.strip() for f in folders_str.split(',') if f.strip()]
+    if not folders and folder:
+        folders = [folder]
+        
     return {
-        "folder": config.get('General', 'folder', fallback=''),
+        "folders": folders,
         "auto_index": config.getboolean('General', 'auto_index', fallback=False),
         "openai_api_key": config.get('APIKeys', 'openai_api_key', fallback=''),
         "local_model_path": config.get('LocalLLM', 'model_path', fallback=''),
@@ -227,7 +245,10 @@ async def get_config():
 @app.post("/api/config")
 async def update_config(config_data: ConfigModel):
     config = configparser.ConfigParser()
-    config['General'] = {'folder': config_data.folder, 'auto_index': str(config_data.auto_index)}
+    config['General'] = {
+        'folders': ','.join(config_data.folders),
+        'auto_index': str(config_data.auto_index)
+    }
     config['APIKeys'] = {'openai_api_key': config_data.openai_api_key or ''}
     config['LocalLLM'] = {'model_path': config_data.local_model_path or '', 'provider': config_data.provider}
     save_config_file(config)
@@ -396,33 +417,77 @@ async def validate_path(request: dict):
     
     return {"valid": True, "file_count": file_count}
 
+@app.get("/api/index/status")
+async def get_indexing_status():
+    """Get current indexing status."""
+    return indexing_status
+
 @app.post("/api/index")
 async def trigger_indexing(background_tasks: BackgroundTasks):
+    global indexing_status
+    if indexing_status["running"]:
+        raise HTTPException(status_code=400, detail="Indexing already in progress")
+        
     config = load_config()
-    folder = config.get('General', 'folder', fallback='')
-    if not folder or not os.path.exists(folder):
-        raise HTTPException(status_code=400, detail="Invalid folder path in configuration")
+    folders_str = config.get('General', 'folders', fallback='')
+    folders = [f.strip() for f in folders_str.split(',') if f.strip()]
     
-    background_tasks.add_task(run_indexing, config)
+    if not folders:
+        # Fallback to old single folder
+        folder = config.get('General', 'folder', fallback='')
+        if folder:
+            folders = [folder]
+            
+    if not folders:
+        raise HTTPException(status_code=400, detail="No folders configured for indexing")
+    
+    # Initialize status
+    indexing_status = {
+        "running": True,
+        "progress": 0,
+        "current_file": "Scanning folders...",
+        "total_files": 0,
+        "processed_files": 0,
+        "error": None
+    }
+    
+    background_tasks.add_task(run_indexing, config, folders)
     return {"status": "accepted", "message": "Indexing started in background"}
 
-def run_indexing(config):
-    global index, docs, tags
-    folder = config.get('General', 'folder')
+def indexing_progress_callback(current, total, filename):
+    global indexing_status
+    indexing_status["processed_files"] = current
+    indexing_status["total_files"] = total
+    indexing_status["current_file"] = filename
+    indexing_status["progress"] = int((current / total) * 100)
+
+def run_indexing(config, folders):
+    global index, docs, tags, indexing_status
+    
     provider = config.get('LocalLLM', 'provider', fallback='openai')
     api_key = config.get('APIKeys', 'openai_api_key', fallback=None)
     model_path = config.get('LocalLLM', 'model_path', fallback=None)
     
     try:
-        new_index, new_docs, new_tags = create_index(folder, provider, api_key, model_path)
+        new_index, new_docs, new_tags = create_index(
+            folders, provider, api_key, model_path, 
+            progress_callback=indexing_progress_callback
+        )
         if new_index:
             save_index(new_index, new_docs, new_tags, 'index.faiss')
             index, docs, tags = new_index, new_docs, new_tags
             print("Indexing completed successfully.")
+            indexing_status["running"] = False
+            indexing_status["progress"] = 100
+            indexing_status["current_file"] = "Complete"
         else:
             print("Indexing failed or no documents found.")
+            indexing_status["running"] = False
+            indexing_status["error"] = "No documents found or processed"
     except Exception as e:
         print(f"Error during indexing: {e}")
+        indexing_status["running"] = False
+        indexing_status["error"] = str(e)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

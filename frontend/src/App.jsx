@@ -14,16 +14,36 @@ function App() {
     const [searchResults, setSearchResults] = useState([]);
     const [aiAnswer, setAiAnswer] = useState("");
     const [activeModel, setActiveModel] = useState(null);
-    const [availableModels, setAvailableModels] = useState([]); // [NEW]
+    const [availableModels, setAvailableModels] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const [folders, setFolders] = useState([]);
+    const [indexingStatus, setIndexingStatus] = useState({ running: false, progress: 0 });
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    useEffect(() => {
+        let interval;
+        const fetchStatus = async () => {
+            try {
+                const res = await axios.get('http://localhost:8000/api/index/status');
+                setIndexingStatus(res.data);
+                if (!res.data.running) clearInterval(interval);
+            } catch (e) {
+                console.error("Status check failed", e);
+            }
+        };
+
+        if (indexingStatus.running) {
+            interval = setInterval(fetchStatus, 2000);
+        }
+        return () => clearInterval(interval);
+    }, [indexingStatus.running]);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme');
@@ -38,7 +58,7 @@ function App() {
 
     const fetchModels = async () => {
         try {
-            const res = await axios.get('/api/models/local');
+            const res = await axios.get('http://localhost:8000/api/models/local');
             if (Array.isArray(res.data)) {
                 setAvailableModels(res.data);
             }
@@ -49,9 +69,10 @@ function App() {
 
     const checkConfig = async () => {
         try {
-            const res = await axios.get('/api/config');
-            if (res.data.local_model_path) {
-                const modelName = res.data.local_model_path.split('\\').pop().split('/').pop().replace('.gguf', '');
+            const response = await axios.get('http://localhost:8000/api/config');
+            setFolders(response.data.folders || []);
+            if (response.data.local_model_path) {
+                const modelName = response.data.local_model_path.split('\\').pop().split('/').pop().replace('.gguf', '');
                 setActiveModel(modelName);
             } else {
                 setActiveModel("Default Embeddings");
@@ -67,18 +88,18 @@ function App() {
         const modelPath = selectedModel ? selectedModel.path : "";
 
         try {
-            // We need to preserve other config, so first get it (activeModel state isn't enough context)
-            const currentConfig = await axios.get('/api/config');
+            // Get current config to preserve other settings
+            const currentConfig = await axios.get('http://localhost:8000/api/config');
 
-            await axios.post('/api/config', {
-                folder: currentConfig.data.folder,
+            await axios.post('http://localhost:8000/api/config', {
+                folders: currentConfig.data.folders || [],
                 auto_index: currentConfig.data.auto_index,
                 openai_api_key: currentConfig.data.openai_api_key,
                 provider: 'local',
                 local_model_path: modelPath
             });
             setActiveModel(modelName);
-            // Optionally notify user
+            console.log(`Switched to model: ${modelName} (${modelPath})`);
         } catch (error) {
             console.error("Failed to switch model", error);
         }
@@ -135,14 +156,15 @@ function App() {
                 toggleDarkMode={() => setDarkMode(!darkMode)}
                 openSettings={() => setIsSettingsOpen(true)}
                 activeModel={activeModel}
-                availableModels={availableModels} // [NEW]
-                onModelChange={handleModelChange} // [NEW]
+                availableModels={availableModels}
+                onModelChange={handleModelChange}
+                indexingStatus={indexingStatus}
             />
 
-            {/* 3D Floating History Button */}
+            {/* 3D Floating History Button - Responsive adaptation */}
             <button
                 onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-                className={`fixed left-4 top-20 z-20 p-3 rounded-2xl glass-v2 transition-all duration-300 transform border border-white/20 hover:scale-110 active:scale-95 shadow-2xl ${isHistoryOpen ? 'rotate-12 translate-x-1' : ''}`}
+                className={`fixed left-4 ${hasSearched ? 'top-20' : 'bottom-10'} z-20 p-3 rounded-2xl glass-v2 transition-all duration-300 transform border border-white/20 hover:scale-110 active:scale-95 shadow-2xl ${isHistoryOpen ? 'rotate-12 translate-x-1' : ''}`}
                 title="Search History"
             >
                 <History className="w-5 h-5 text-primary" />

@@ -5,7 +5,7 @@ import ModelManager from './ModelManager';
 
 const SettingsModal = ({ isOpen, onClose, onSave }) => {
     const [config, setConfig] = useState({
-        folder: '',
+        folders: [],
         auto_index: false,
         provider: 'local',
         // API Keys for different providers
@@ -15,10 +15,16 @@ const SettingsModal = ({ isOpen, onClose, onSave }) => {
         grok_api_key: '',
         // Local model settings
         local_model_path: '',
-        local_model_type: 'ollama'  // ollama, llamacpp, huggingface
+        local_model_type: 'llamacpp'
     });
     const [isLoading, setIsLoading] = useState(false);
-    const [isIndexing, setIsIndexing] = useState(false);
+    const [indexingStatus, setIndexingStatus] = useState({
+        running: false,
+        progress: 0,
+        current_file: '',
+        total_files: 0,
+        processed_files: 0
+    });
     const [expandedSection, setExpandedSection] = useState(null);
 
     useEffect(() => {
@@ -27,12 +33,30 @@ const SettingsModal = ({ isOpen, onClose, onSave }) => {
         }
     }, [isOpen]);
 
+    useEffect(() => {
+        let interval;
+        if (isOpen) {
+            fetchIndexingStatus();
+            interval = setInterval(fetchIndexingStatus, 1500);
+        }
+        return () => clearInterval(interval);
+    }, [isOpen]);
+
     const fetchConfig = async () => {
         try {
             const response = await axios.get('http://localhost:8000/api/config');
             setConfig(prev => ({ ...prev, ...response.data }));
         } catch (error) {
             console.error('Failed to fetch config:', error);
+        }
+    };
+
+    const fetchIndexingStatus = async () => {
+        try {
+            const response = await axios.get('http://localhost:8000/api/index/status');
+            setIndexingStatus(response.data);
+        } catch (error) {
+            console.error('Failed to fetch status:', error);
         }
     };
 
@@ -49,27 +73,33 @@ const SettingsModal = ({ isOpen, onClose, onSave }) => {
         }
     };
 
-    const handleBrowseFolder = async () => {
+    const handleAddFolder = async () => {
         try {
             const response = await axios.get('http://localhost:8000/api/browse');
-            if (response.data.folder) {
-                setConfig(prev => ({ ...prev, folder: response.data.folder }));
+            if (response.data.folder && !config.folders.includes(response.data.folder)) {
+                setConfig(prev => ({
+                    ...prev,
+                    folders: [...prev.folders, response.data.folder]
+                }));
             }
         } catch (error) {
             console.error('Failed to browse:', error);
         }
     };
 
+    const handleRemoveFolder = (folderToRemove) => {
+        setConfig(prev => ({
+            ...prev,
+            folders: prev.folders.filter(f => f !== folderToRemove)
+        }));
+    };
+
     const handleIndex = async () => {
         await handleSave();
-        setIsIndexing(true);
         try {
             await axios.post('http://localhost:8000/api/index');
-            alert('Indexing started!');
         } catch (error) {
             console.error('Failed to index:', error);
-        } finally {
-            setIsIndexing(false);
         }
     };
 
@@ -118,33 +148,73 @@ const SettingsModal = ({ isOpen, onClose, onSave }) => {
                 </div>
 
                 <div className="p-4 space-y-4">
+                    {/* Indexing Progress */}
+                    {indexingStatus.running && (
+                        <div className="p-4 rounded-xl glass-v2 border border-primary/20 bg-primary/5">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-sm font-bold text-primary flex items-center gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Indexing...
+                                </span>
+                                <span className="text-xs font-mono font-bold text-primary">
+                                    {indexingStatus.progress}%
+                                </span>
+                            </div>
+                            <div className="w-full bg-primary/10 rounded-full h-2 overflow-hidden">
+                                <div
+                                    className="bg-primary h-full transition-all duration-300"
+                                    style={{ width: `${indexingStatus.progress}%` }}
+                                />
+                            </div>
+                            <div className="text-[10px] text-muted-foreground truncate opacity-80">
+                                {indexingStatus.current_file}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Folder Section */}
                     <section className="space-y-3">
-                        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                            Document Folder
-                        </h3>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={config.folder}
-                                onChange={(e) => setConfig({ ...config, folder: e.target.value })}
-                                className="flex-1 px-3 py-2 text-sm rounded-lg border border-input bg-background"
-                                placeholder="Select a folder to index..."
-                            />
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                                Document Folders
+                            </h3>
                             <button
-                                onClick={handleBrowseFolder}
-                                className="px-3 py-2 rounded-lg border border-input hover:bg-accent transition-colors"
+                                onClick={handleAddFolder}
+                                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-colors"
                             >
-                                <FolderOpen className="w-4 h-4" />
+                                <FolderOpen className="w-3.5 h-3.5" />
+                                Add Folder
                             </button>
                         </div>
+
+                        <div className="space-y-2">
+                            {config.folders.length > 0 ? (
+                                config.folders.map((folder, idx) => (
+                                    <div key={idx} className="flex items-center gap-2 group p-2 rounded-lg border border-border bg-card/50">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-medium truncate opacity-80">{folder}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleRemoveFolder(folder)}
+                                            className="p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-6 border-2 border-dashed border-border rounded-xl">
+                                    <p className="text-sm text-muted-foreground">No folders selected</p>
+                                </div>
+                            )}
+                        </div>
+
                         <button
                             onClick={handleIndex}
-                            disabled={!config.folder || isIndexing}
-                            className="w-full py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 text-sm font-medium flex items-center justify-center gap-2"
+                            disabled={config.folders.length === 0 || indexingStatus.running}
+                            className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 text-sm font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98] mt-2"
                         >
-                            {isIndexing ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                            {isIndexing ? 'Indexing...' : 'Index Folder'}
+                            {indexingStatus.running ? 'Indexing...' : 'Rebuild Index'}
                         </button>
                     </section>
 

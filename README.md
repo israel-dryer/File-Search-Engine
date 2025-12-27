@@ -112,59 +112,70 @@ cd frontend && npm run dev
 
 ## 🧪 Testing
 
-All tests are located in the `tests/` directory. Run tests before making changes to ensure stability.
+All tests are in `tests/`. **Always run tests before committing changes.**
 
-### Running Tests
+### Quick Start
 
 ```bash
-# Run all unit tests (quick - ~12 seconds)
-python run_tests.py --quick
+npm run test          # Fast unit tests (~12 seconds) - run before every commit
+npm run test:full     # All tests including model tests (~5-10 minutes)
+npm run test:stress   # Performance stress tests
+```
 
-# Run all tests including model comparison (slow - ~5-10 minutes)
-python run_tests.py
+### Types of Tests Explained
 
-# Run with verbose output
-python run_tests.py --verbose
+| Type | What It Does | When to Run |
+|------|--------------|-------------|
+| **Unit Tests** | Tests individual functions (API, database, search, etc.) in isolation | Before every commit |
+| **Model Tests** | Tests LLM loading, text generation, model comparison | When changing model code |
+| **Stress Tests** | Simulates heavy usage - many concurrent requests | Before releases |
+| **Coverage** | Shows which lines of code are tested vs untested | To improve test quality |
 
-# Run with coverage report (requires pytest-cov)
+### Commands Quick Reference
+
+| Command | Description | Speed |
+|---------|-------------|-------|
+| `npm run test` | Quick unit tests | ~12 sec |
+| `npm run test:full` | All tests (incl. model) | ~10 min |
+| `npm run test:stress` | Load/stress tests | ~2 min |
+| `python run_tests.py --coverage` | With coverage report | ~15 sec |
+
+### What is Coverage?
+
+**Coverage** shows the percentage of your code that is tested. Higher coverage = more confidence.
+
+```bash
+# Run with coverage (needs pytest-cov: pip install pytest-cov)
 python run_tests.py --coverage
+```
 
-# Run a specific test file
-python -m pytest tests/test_api.py -v
+This generates a report showing which lines have tests and which don't.
 
-# Run stress tests only
+### What is Stress Testing?
+
+**Stress tests** simulate real-world heavy usage:
+- Many search queries at once
+- Large file indexing
+- Concurrent API requests
+
+This helps find performance bottlenecks and memory leaks.
+
+```bash
 python tests/stress_test.py
 ```
 
-### Test Files
+### Test Files Overview
 
-| Test File | Description |
-|-----------|-------------|
-| `test_api.py` | API endpoint tests (config, search, index) |
-| `test_database.py` | Database operations (file metadata, search history) |
-| `test_file_processing.py` | File extraction (PDF, DOCX, TXT, XLSX, PPTX) |
-| `test_indexing.py` | FAISS index creation and loading |
-| `test_search.py` | Semantic search functionality |
-| `test_llm_integration.py` | LLM and embeddings integration |
-| `test_model_comparison.py` | Model ranking and comparison tests |
-| `test_model_manager.py` | Model download and resource checks |
-| `test_benchmarks.py` | Benchmark module tests |
-| `test_workflow.py` | End-to-end workflow tests |
-| `test_rag_pipeline.py` | RAG pipeline integration tests |
-| `test_extraction.py` | Text extraction tests |
-| `stress_test.py` | Load and performance stress tests |
+| File | Tests |
+|------|-------|
+| `test_api.py` | API endpoints (search, config, index) |
+| `test_database.py` | File metadata, search history storage |
+| `test_file_processing.py` | PDF, DOCX, XLSX, PPTX extraction |
+| `test_search.py` | FAISS semantic search |
+| `test_model_comparison.py` | Model ranking by accuracy/speed |
+| `stress_test.py` | Load testing, concurrent requests |
 
-### Before Committing
 
-Always run tests before committing changes:
-
-```bash
-# Quick validation
-python run_tests.py --quick
-
-# Full validation (if changing models or benchmarks)
-python run_tests.py
-```
 ## 💡 Usage Guide
 
 ### First-Time Setup

@@ -1,4 +1,3 @@
-```
 # Compiled Python files
 *.pyc
 __pycache__/
@@ -37,8 +36,6 @@ models/
 *.db
 index_docs.pkl
 index_tags.pkl
-docs.pkl
-tags.pkl
 
 # Configuration and Local Files
 config.ini
@@ -49,4 +46,3 @@ git_status*.txt
 # Editors
 .vscode/
 .idea/
-```

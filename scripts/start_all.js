@@ -102,9 +102,19 @@ async function main() {
 
     log('Setup', colors.green, 'Ports available ✓');
 
+    // Detect Python executable (check for venv)
+    const isWin = process.platform === 'win32';
+    const venvPython = isWin
+        ? path.join(__dirname, '..', 'venv', 'Scripts', 'python.exe')
+        : path.join(__dirname, '..', 'venv', 'bin', 'python');
+
+    const fs = require('fs');
+    const pythonExe = fs.existsSync(venvPython) ? venvPython : 'python';
+    log('Setup', colors.cyan, `Using Python executable: ${pythonExe}`);
+
     // Start Backend
     log('Backend', colors.blue, 'Starting FastAPI server...');
-    const backendProcess = spawn('python', ['-m', 'uvicorn', 'api:app', '--reload', '--host', '0.0.0.0', '--port', String(BACKEND_PORT)], {
+    const backendProcess = spawn(pythonExe, ['-m', 'uvicorn', 'api:app', '--reload', '--host', '0.0.0.0', '--port', String(BACKEND_PORT)], {
         cwd: path.resolve(__dirname, '..'),
         shell: true,
         stdio: ['ignore', 'pipe', 'pipe']
@@ -122,7 +132,8 @@ async function main() {
 
     // Start Frontend
     log('Frontend', colors.magenta, 'Starting Vite dev server...');
-    const frontendProcess = spawn('npm', ['run', 'dev'], {
+    const npmCmd = isWin ? 'npm.cmd' : 'npm';
+    const frontendProcess = spawn(npmCmd, ['run', 'dev'], {
         cwd: path.resolve(__dirname, '..', 'frontend'),
         shell: true,
         stdio: ['ignore', 'pipe', 'pipe']

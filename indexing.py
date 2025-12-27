@@ -8,12 +8,15 @@ from llm_integration import get_embeddings, get_tags
 from file_processing import extract_text
 import database
 
-def create_index(folder_path, provider, api_key=None, model_path=None, progress_callback=None):
+def create_index(folder_paths, provider, api_key=None, model_path=None, progress_callback=None):
     """
-    Creates a FAISS index for the files in the specified folder.
-    Now with metadata storage and progress tracking.
+    Creates a FAISS index for the files in the specified folders.
+    Now with metadata storage and progress tracking across multiple folders.
     """
-    print(f"Starting indexing of folder: {folder_path}")
+    if isinstance(folder_paths, str):
+        folder_paths = [folder_paths]
+        
+    print(f"Starting indexing of folders: {folder_paths}")
     
     embeddings_model = get_embeddings(provider, api_key, model_path)
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
@@ -21,17 +24,21 @@ def create_index(folder_path, provider, api_key=None, model_path=None, progress_
     # Clear existing files from database
     database.clear_all_files()
     
-    # Collect all files first
+    # Collect all files first from all folders
     all_files = []
-    for dirpath, _, filenames in os.walk(folder_path):
-        for filename in filenames:
-            filepath = os.path.join(dirpath, filename)
-            all_files.append(filepath)
+    for folder_path in folder_paths:
+        if not os.path.exists(folder_path):
+            print(f"Warning: Folder does not exist: {folder_path}")
+            continue
+        for dirpath, _, filenames in os.walk(folder_path):
+            for filename in filenames:
+                filepath = os.path.join(dirpath, filename)
+                all_files.append(filepath)
     
-    print(f"Found {len(all_files)} files to process")
+    print(f"Found {len(all_files)} total files to process")
     
     if not all_files:
-        print("No files found in folder")
+        print("No files found in any of the folders")
         return None, None, None
     
     docs = []

@@ -31,7 +31,7 @@ const Header = ({ darkMode, toggleDarkMode, openSettings, activeModel, available
                 <div className="flex items-center gap-2 sm:gap-4">
                     {/* Active Model Dropdown */}
                     {activeModel && (
-                        <div className="relative hidden sm:block">
+                        <div className="relative">
                             <button
                                 onClick={toggleModelDropdown}
                                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-secondary/50 border border-border/50 shadow-inner hover:bg-secondary transition-colors"

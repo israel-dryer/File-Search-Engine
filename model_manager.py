@@ -157,18 +157,71 @@ AVAILABLE_MODELS = [
         "recommended": False,
         "url": "https://huggingface.co/TheBloke/zephyr-7B-beta-GGUF/resolve/main/zephyr-7b-beta.Q4_K_M.gguf"
     },
+    # High-Quality / Latest Models
     {
-        "id": "neural-chat-7b-v3-1.Q4_K_M",
-        "name": "Neural Chat 7B v3.1 (Intel)",
-        "description": "Intel's optimized chat model.",
+        "id": "Meta-Llama-3-8B-Instruct.Q4_K_M",
+        "name": "Llama 3 8B Instruct",
+        "description": "Meta's latest high-performance 8B model. Excellent for summarization.",
+        "size": "4.92 GB",
+        "size_bytes": 5280000000,
+        "ram_required": 10,
+        "category": "large",
+        "quantization": "Q4_K_M",
+        "use_case": "Advanced Summarization, Chat, Reasoning",
+        "recommended": True,
+        "url": "https://huggingface.co/MaziyarPanahi/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct.Q4_K_M.gguf"
+    },
+    {
+        "id": "Phi-3.5-mini-instruct.Q4_K_M",
+        "name": "Phi-3.5 Mini Instruct",
+        "description": "Microsoft's latest state-of-the-art small model (3.8B). Extremely capable.",
+        "size": "2.4 GB",
+        "size_bytes": 2500000000,
+        "ram_required": 6,
+        "category": "medium",
+        "quantization": "Q4_K_M",
+        "use_case": "Reasoning, Summarization, Coding",
+        "recommended": True,
+        "url": "https://huggingface.co/bartowski/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf"
+    },
+    {
+        "id": "Mistral-7B-Instruct-v0.3.Q4_K_M",
+        "name": "Mistral 7B Instruct v0.3",
+        "description": "Updated Mistral 7B with larger vocabulary and better performance.",
         "size": "4.37 GB",
         "size_bytes": 4690000000,
         "ram_required": 8,
         "category": "large",
         "quantization": "Q4_K_M",
-        "use_case": "Chat, instructions",
+        "use_case": "General, Summarization, Reliable Instructions",
+        "recommended": True,
+        "url": "https://huggingface.co/maziyarpanahi/Mistral-7B-Instruct-v0.3-GGUF/resolve/main/Mistral-7B-Instruct-v0.3.Q4_K_M.gguf"
+    },
+    {
+        "id": "gemma-2-2b-it.Q4_K_M",
+        "name": "Gemma 2 2B Instruct",
+        "description": "Google's best-in-class small model (2.6B). High quality in a small package.",
+        "size": "1.7 GB",
+        "size_bytes": 1800000000,
+        "ram_required": 5,
+        "category": "medium",
+        "quantization": "Q4_K_M",
+        "use_case": "Chat, Summarization, Fast Responses",
+        "recommended": True,
+        "url": "https://huggingface.co/bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf"
+    },
+    {
+        "id": "openchat-3.5-0106.Q4_K_M",
+        "name": "OpenChat 3.5 (0106)",
+        "description": "Consistently high-ranking open source model for reasoning and chat.",
+        "size": "4.37 GB",
+        "size_bytes": 4690000000,
+        "ram_required": 8,
+        "category": "large",
+        "quantization": "Q4_K_M",
+        "use_case": "Chat, Complex Instructions, Summarization",
         "recommended": False,
-        "url": "https://huggingface.co/TheBloke/neural-chat-7B-v3-1-GGUF/resolve/main/neural-chat-7b-v3-1.Q4_K_M.gguf"
+        "url": "https://huggingface.co/TheBloke/openchat-3.5-0106-GGUF/resolve/main/openchat-3.5-0106.Q4_K_M.gguf"
     }
 ]
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Download, Trash2, Check, Loader2, HardDrive, AlertCircle, Star, Cpu, Search, Filter } from 'lucide-react';
 
-const ModelManager = () => {
+const ModelManager = ({ onSelectModel }) => {
     const [availableModels, setAvailableModels] = useState([]);
     const [localModels, setLocalModels] = useState([]);
     const [downloadStatus, setDownloadStatus] = useState({ downloading: false });
@@ -155,12 +155,20 @@ const ModelManager = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => handleDelete(model.path)}
-                                    className="p-1.5 rounded hover:bg-destructive/10 hover:text-destructive shrink-0"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => onSelectModel && onSelectModel(model.path)}
+                                        className="px-2 py-1 text-xs font-medium rounded bg-primary/10 text-primary hover:bg-primary/20 shrink-0"
+                                    >
+                                        Select
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(model.path)}
+                                        className="p-1.5 rounded hover:bg-destructive/10 hover:text-destructive shrink-0"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>

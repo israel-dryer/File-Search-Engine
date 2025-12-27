@@ -220,6 +220,9 @@ class ConfigModel(BaseModel):
     folders: List[str] = []
     auto_index: bool = False
     openai_api_key: Optional[str] = ""
+    gemini_api_key: Optional[str] = ""
+    anthropic_api_key: Optional[str] = ""
+    grok_api_key: Optional[str] = ""
     local_model_path: Optional[str] = ""
     provider: str = "openai"
 
@@ -238,6 +241,9 @@ async def get_config():
         "folders": folders,
         "auto_index": config.getboolean('General', 'auto_index', fallback=False),
         "openai_api_key": config.get('APIKeys', 'openai_api_key', fallback=''),
+        "gemini_api_key": config.get('APIKeys', 'gemini_api_key', fallback=''),
+        "anthropic_api_key": config.get('APIKeys', 'anthropic_api_key', fallback=''),
+        "grok_api_key": config.get('APIKeys', 'grok_api_key', fallback=''),
         "local_model_path": config.get('LocalLLM', 'model_path', fallback=''),
         "provider": config.get('LocalLLM', 'provider', fallback='openai')
     }
@@ -249,7 +255,12 @@ async def update_config(config_data: ConfigModel):
         'folders': ','.join(config_data.folders),
         'auto_index': str(config_data.auto_index)
     }
-    config['APIKeys'] = {'openai_api_key': config_data.openai_api_key or ''}
+    config['APIKeys'] = {
+        'openai_api_key': config_data.openai_api_key or '',
+        'gemini_api_key': config_data.gemini_api_key or '',
+        'anthropic_api_key': config_data.anthropic_api_key or '',
+        'grok_api_key': config_data.grok_api_key or ''
+    }
     config['LocalLLM'] = {'model_path': config_data.local_model_path or '', 'provider': config_data.provider}
     save_config_file(config)
     return {"status": "success", "message": "Configuration saved"}
@@ -266,7 +277,18 @@ async def search_files(request: SearchRequest):
         
         config = load_config()
         provider = config.get('LocalLLM', 'provider', fallback='openai')
-        api_key = config.get('APIKeys', 'openai_api_key', fallback=None)
+
+        # Determine correct API key based on provider
+        api_key = None
+        if provider == 'openai':
+            api_key = config.get('APIKeys', 'openai_api_key', fallback=None)
+        elif provider == 'gemini':
+            api_key = config.get('APIKeys', 'gemini_api_key', fallback=None)
+        elif provider == 'anthropic':
+            api_key = config.get('APIKeys', 'anthropic_api_key', fallback=None)
+        elif provider == 'grok':
+            api_key = config.get('APIKeys', 'grok_api_key', fallback=None)
+
         model_path = config.get('LocalLLM', 'model_path', fallback=None)
         
         embeddings_model = get_embeddings(provider, api_key, model_path)
@@ -278,12 +300,19 @@ async def search_files(request: SearchRequest):
         processed_results = []
         context_snippets = []
         
-        for result in results:
-            # Pass the query to extract relevant answers from the document
-            summary = summarize(result['document'], provider, api_key, model_path, question=request.query)
+        from llm_integration import smart_summary
+
+        for idx, result in enumerate(results):
+            # For top 3 results, use Smart Summary (LLM) if configured
+            if idx < 3:
+                summary = smart_summary(result['document'], request.query, provider, api_key, model_path)
+            else:
+                # Fallback to fast summary for others to save time
+                summary = summarize(result['document'], provider, api_key, model_path, question=request.query)
             
-            # Format context for AI
-            if summary:
+            # Format context for AI (Nexus Insight)
+            # We prefer using the smart summary if available, otherwise raw document text
+            if summary and len(summary) > 20:
                 context_snippets.append(summary)
             else:
                 context_snippets.append(result['document'][:500])
@@ -306,16 +335,18 @@ async def search_files(request: SearchRequest):
                 file_name=file_info['filename'] if file_info else None
             ))
         
-        # Generate AI Answer if we have local model
+        # Generate AI Answer if we have local model OR cloud provider
         ai_answer = ""
-        active_model_name = "Embedded Search"
-        
-        if model_path and os.path.exists(model_path):
+        active_model_name = provider.capitalize()
+        if provider == 'local' and model_path:
             active_model_name = os.path.basename(model_path).replace(".gguf", "").replace("-", " ")
-            context_text = "\n\n".join(context_snippets[:4]) # Top 4 results
-            if context_text:
-                print(f"Generating answer with {active_model_name}...")
-                ai_answer = generate_ai_answer(context_text, request.query, model_path)
+
+        # We try to generate an answer if any provider is configured
+        context_text = "\n\n".join(context_snippets[:4]) # Top 4 results
+        if context_text:
+            print(f"Generating answer with {active_model_name}...")
+            # We now pass provider and api_key to generate_ai_answer
+            ai_answer = generate_ai_answer(context_text, request.query, provider, api_key, model_path)
         
         # Save to search history
         execution_time_ms = int((time.time() - start_time) * 1000)

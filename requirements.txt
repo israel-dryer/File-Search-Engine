@@ -10,11 +10,13 @@ python-multipart==0.0.18
 faiss-cpu==1.12.0
 
 # LLM Integration
-langchain==0.3.7
-langchain-community==0.3.7
-langchain-core==1.2.2
-langchain-huggingface==1.2.0
-langchain-text-splitters==0.3.5
+langchain
+langchain-community
+langchain-huggingface
+langchain-text-splitters
+langchain-google-genai
+langchain-anthropic
+langchain-openai
 llama-cpp-python==0.2.90
 
 # Document Processing
@@ -25,3 +27,4 @@ openpyxl==3.1.5
 
 # Utilities
 psutil==6.1.1
+watchdog

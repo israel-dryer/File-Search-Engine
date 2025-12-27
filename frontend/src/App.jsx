@@ -128,7 +128,9 @@ function App() {
                 setAiAnswer(response.data.ai_answer);
             }
             if (response.data.active_model) {
-                setActiveModel(response.data.active_model);
+                // Clean up model name if it contains .gguf
+                const modelName = response.data.active_model.replace('.gguf', '');
+                setActiveModel(modelName);
             }
         } catch (error) {
             console.error('Search failed:', error);
@@ -211,6 +213,7 @@ function App() {
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
                 onSave={() => { checkConfig(); fetchModels(); }}
+                activeModel={activeModel}
             />
         </div>
     );

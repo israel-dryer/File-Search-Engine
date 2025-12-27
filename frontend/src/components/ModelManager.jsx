@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Download, Trash2, Check, Loader2, HardDrive, AlertCircle, Star, Cpu, Search, Filter } from 'lucide-react';
 
-const ModelManager = ({ onSelectModel }) => {
+const ModelManager = ({ onSelectModel, activeModel, selectedPath }) => {
     const [availableModels, setAvailableModels] = useState([]);
     const [localModels, setLocalModels] = useState([]);
     const [downloadStatus, setDownloadStatus] = useState({ downloading: false });
@@ -80,14 +80,7 @@ const ModelManager = ({ onSelectModel }) => {
         return gb >= 1 ? `${gb.toFixed(1)} GB` : `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
     };
 
-    const formatEta = (bytesDownloaded, totalBytes, startTime) => {
-        if (!bytesDownloaded || !totalBytes) return '';
-        const elapsed = (Date.now() - startTime) / 1000;
-        const speed = bytesDownloaded / elapsed;
-        const remaining = (totalBytes - bytesDownloaded) / speed;
-        if (remaining < 60) return `~${Math.round(remaining)}s`;
-        return `~${Math.round(remaining / 60)}m`;
-    };
+    const normalize = (name) => name?.toLowerCase().replace('.gguf', '') || '';
 
     const getCategoryColor = (category) => {
         switch (category) {
@@ -105,6 +98,11 @@ const ModelManager = ({ onSelectModel }) => {
             case 'large': return 'Quality';
             default: return category;
         }
+    };
+
+    const normalizePath = (path) => {
+        if (!path) return '';
+        return path.replace(/\\/g, '/').toLowerCase();
     };
 
     const filteredModels = availableModels.filter(model => {
@@ -135,42 +133,66 @@ const ModelManager = ({ onSelectModel }) => {
                 </h4>
                 {localModels.length > 0 ? (
                     <div className="space-y-2">
-                        {localModels.map((model, idx) => (
-                            <div
-                                key={idx}
-                                className="flex items-center justify-between p-2 rounded-lg border border-border bg-card"
-                            >
-                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    <HardDrive className="w-4 h-4 text-green-500 shrink-0" />
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-medium truncate">{model.name}</p>
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                            <span>{formatSize(model.size)}</span>
-                                            {model.ram_required && (
-                                                <span className="flex items-center gap-1">
-                                                    <Cpu className="w-3 h-3" />
-                                                    {model.ram_required}GB RAM
-                                                </span>
-                                            )}
+                        {localModels.map((model, idx) => {
+                            // Use selectedPath if available, otherwise fallback to name matching for activeModel (for backward compatibility or initial load)
+                            // But for the specific "Select" button state, we prioritize the selectedPath prop.
+                            const isSelected = selectedPath ? normalizePath(model.path) === normalizePath(selectedPath) : normalize(model.name) === normalize(activeModel);
+                            // Active means it is the one possibly currently running in the backend (activeModel)
+                            const isActiveRunning = normalize(model.name) === normalize(activeModel);
+
+                            return (
+                                <div
+                                    key={idx}
+                                    className={`flex items-center justify-between p-2 rounded-lg border transition-all duration-200 ${isSelected
+                                        ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20'
+                                        : 'border-border bg-card'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        <HardDrive className={`w-4 h-4 shrink-0 ${isSelected ? 'text-primary' : 'text-green-500'}`} />
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <p className={`text-sm font-medium truncate ${isSelected ? 'text-primary' : ''}`}>
+                                                    {model.name}
+                                                </p>
+                                                {isActiveRunning && (
+                                                    <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase rounded bg-primary text-primary-foreground">
+                                                        Active
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                <span>{formatSize(model.size)}</span>
+                                                {model.ram_required && (
+                                                    <span className="flex items-center gap-1">
+                                                        <Cpu className="w-3 h-3" />
+                                                        {model.ram_required}GB RAM
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => onSelectModel && onSelectModel(model.path)}
+                                            className={`px-2 py-1 text-xs font-medium rounded shrink-0 transition-colors ${isSelected
+                                                ? 'bg-primary text-primary-foreground pointer-events-none opacity-50'
+                                                : 'bg-primary/10 text-primary hover:bg-primary/20'
+                                                }`}
+                                        >
+                                            {isSelected ? 'Selected' : 'Select'}
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(model.path)}
+                                            className="p-1.5 rounded hover:bg-destructive/10 hover:text-destructive shrink-0"
+                                            title="Delete Model"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                    <button
-                                        onClick={() => onSelectModel && onSelectModel(model.path)}
-                                        className="px-2 py-1 text-xs font-medium rounded bg-primary/10 text-primary hover:bg-primary/20 shrink-0"
-                                    >
-                                        Select
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(model.path)}
-                                        className="p-1.5 rounded hover:bg-destructive/10 hover:text-destructive shrink-0"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 ) : (
                     <p className="text-sm text-muted-foreground p-4 text-center">No models downloaded</p>
@@ -202,8 +224,8 @@ const ModelManager = ({ onSelectModel }) => {
                             key={cat}
                             onClick={() => setFilter(cat)}
                             className={`px-2 py-1 text-xs rounded-md transition-colors ${filter === cat
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted hover:bg-muted/80'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted hover:bg-muted/80'
                                 }`}
                         >
                             {cat === 'all' ? 'All' : getCategoryLabel(cat)}
@@ -211,7 +233,7 @@ const ModelManager = ({ onSelectModel }) => {
                     ))}
                 </div>
 
-                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
                     {filteredModels.map((model) => (
                         <div
                             key={model.id}

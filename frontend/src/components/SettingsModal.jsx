@@ -3,7 +3,7 @@ import axios from 'axios';
 import { X, Settings, FolderOpen, Loader2, Save, ChevronDown, ChevronUp, Key, Cpu, Trash2 } from 'lucide-react';
 import ModelManager from './ModelManager';
 
-const SettingsModal = ({ isOpen, onClose, onSave }) => {
+const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
     const [config, setConfig] = useState({
         folders: [],
         auto_index: false,
@@ -126,9 +126,7 @@ const SettingsModal = ({ isOpen, onClose, onSave }) => {
     ];
 
     const localModels = [
-        { id: 'ollama', name: 'Ollama', desc: 'Easy local models (llama3, mistral, etc.)' },
         { id: 'llamacpp', name: 'LlamaCpp (GGUF)', desc: 'Run .gguf model files directly' },
-        { id: 'huggingface', name: 'HuggingFace', desc: 'Sentence transformers for embeddings' },
     ];
 
     if (!isOpen) return null;
@@ -252,45 +250,51 @@ const SettingsModal = ({ isOpen, onClose, onSave }) => {
 
                             {expandedSection === 'local' && (
                                 <div className="space-y-3 pl-2 border-l-2 border-border ml-2">
-                                    <div className="space-y-2">
-                                        <label className="text-sm">Model Type</label>
-                                        <div className="space-y-2">
-                                            {localModels.map(model => (
-                                                <label key={model.id} className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-accent cursor-pointer">
-                                                    <input
-                                                        type="radio"
-                                                        name="localModelType"
-                                                        value={model.id}
-                                                        checked={config.local_model_type === model.id}
-                                                        onChange={(e) => setConfig({ ...config, local_model_type: e.target.value })}
-                                                        className="mt-0.5"
-                                                    />
-                                                    <div>
-                                                        <div className="font-medium text-sm">{model.name}</div>
-                                                        <div className="text-xs text-muted-foreground">{model.desc}</div>
-                                                    </div>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {config.local_model_type === 'llamacpp' && (
-                                        <div className="space-y-2">
-                                            <label className="text-sm">Model File Path</label>
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={config.local_model_path}
-                                                    onChange={(e) => setConfig({ ...config, local_model_path: e.target.value })}
-                                                    className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
-                                                    placeholder="models/mistral-7b.gguf"
-                                                />
+                                    {/* Active Model Banner */}
+                                    {activeModel && (
+                                        <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-between mb-4">
+                                            <div>
+                                                <div className="text-[10px] uppercase font-bold text-primary tracking-wider mb-0.5">Currently Active</div>
+                                                <div className="text-sm font-bold flex items-center gap-2">
+                                                    <Cpu className="w-4 h-4 text-primary" />
+                                                    {activeModel}
+                                                </div>
                                             </div>
-                                            <p className="text-xs text-muted-foreground">Select a downloaded model below to auto-fill this.</p>
+                                            <div className="px-2 py-0.5 bg-primary text-primary-foreground text-[10px] rounded-md font-bold uppercase tracking-widest">
+                                                Active
+                                            </div>
                                         </div>
                                     )}
 
-                                    <ModelManager onSelectModel={(path) => setConfig({ ...config, local_model_path: path })} />
+                                    {localModels.length > 1 && (
+                                        <div className="space-y-2">
+                                            <label className="text-sm">Model Type</label>
+                                            <div className="space-y-2">
+                                                {localModels.map(model => (
+                                                    <label key={model.id} className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-accent cursor-pointer">
+                                                        <input
+                                                            type="radio"
+                                                            name="localModelType"
+                                                            value={model.id}
+                                                            checked={config.local_model_type === model.id}
+                                                            onChange={(e) => setConfig({ ...config, local_model_type: e.target.value })}
+                                                            className="mt-0.5"
+                                                        />
+                                                        <div>
+                                                            <div className="font-medium text-sm">{model.name}</div>
+                                                            <div className="text-xs text-muted-foreground">{model.desc}</div>
+                                                        </div>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <ModelManager
+                                        onSelectModel={(path) => setConfig({ ...config, local_model_path: path })}
+                                        activeModel={activeModel}
+                                        selectedPath={config.local_model_path}
+                                    />
                                 </div>
                             )}
                         </section>

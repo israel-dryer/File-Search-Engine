@@ -128,7 +128,7 @@ class TestAPIResponseFormats(unittest.TestCase):
         data = response.json()
         
         # Required fields
-        self.assertIn('folder', data)
+        self.assertIn('folders', data)
         self.assertIn('provider', data)
         self.assertIn('auto_index', data)
     
@@ -185,7 +185,7 @@ class TestErrorHandling(unittest.TestCase):
     def test_invalid_config_data(self):
         """Test handling of invalid config data."""
         response = self.client.post("/api/config", json={
-            "folder": None,  # Invalid
+            "folders": None,  # Invalid
             "auto_index": "not_a_boolean",  # Invalid
         })
         

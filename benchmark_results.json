@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-01-09T13:25:11.572588",
+  "system_info": {
+    "total_ram_gb": 31.692127227783203,
+    "available_ram_gb": 14.694927215576172,
+    "cpu_count": 20
+  },
+  "results": [
+    {
+      "model_name": "llama 2 7b chat Q4_K_M",
+      "model_path": "C:\\Users\\siddh\\OneDrive\\Desktop\\Projects\\File-Search-Engine-1\\models\\llama-2-7b-chat.Q4_K_M.gguf",
+      "model_size_mb": 1550.0,
+      "load_time_s": 0,
+      "embedding_latency_ms": 0,
+      "first_token_latency_ms": 0,
+      "tokens_per_second": 0,
+      "total_generation_time_s": 0,
+      "peak_memory_mb": 0,
+      "fact_retention_score": 0,
+      "samples_tested": 0,
+      "errors": [
+        "1 validation error for LlamaCpp\n  Value error, Could not load Llama model from path: C:\\Users\\siddh\\OneDrive\\Desktop\\Projects\\File-Search-Engine-1\\models\\llama-2-7b-chat.Q4_K_M.gguf. Received error Failed to load model from file: C:\\Users\\siddh\\OneDrive\\Desktop\\Projects\\File-Search-Engine-1\\models\\llama-2-7b-chat.Q4_K_M.gguf [type=value_error, input_value={'model_path': 'C:\\\\Users...: None, 'grammar': None}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.9/v/value_error"
+      ]
+    },
+    {
+      "model_name": "mistral 7b instruct v0 1 Q4_K_M",
+      "model_path": "C:\\Users\\siddh\\OneDrive\\Desktop\\Projects\\File-Search-Engine-1\\models\\mistral-7b-instruct-v0.1.Q4_K_M.gguf",
+      "model_size_mb": 3238.0,
+      "load_time_s": 0,
+      "embedding_latency_ms": 0,
+      "first_token_latency_ms": 0,
+      "tokens_per_second": 0,
+      "total_generation_time_s": 0,
+      "peak_memory_mb": 0,
+      "fact_retention_score": 0,
+      "samples_tested": 0,
+      "errors": [
+        "1 validation error for LlamaCpp\n  Value error, Could not load Llama model from path: C:\\Users\\siddh\\OneDrive\\Desktop\\Projects\\File-Search-Engine-1\\models\\mistral-7b-instruct-v0.1.Q4_K_M.gguf. Received error Failed to load model from file: C:\\Users\\siddh\\OneDrive\\Desktop\\Projects\\File-Search-Engine-1\\models\\mistral-7b-instruct-v0.1.Q4_K_M.gguf [type=value_error, input_value={'model_path': 'C:\\\\Users...: None, 'grammar': None}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.9/v/value_error"
+      ]
+    },
+    {
+      "model_name": "phi 2 Q4_K_M",
+      "model_path": "C:\\Users\\siddh\\OneDrive\\Desktop\\Projects\\File-Search-Engine-1\\models\\phi-2.Q4_K_M.gguf",
+      "model_size_mb": 1706.35,
+      "load_time_s": 0.41,
+      "embedding_latency_ms": 38.46,
+      "first_token_latency_ms": 154.62,
+      "tokens_per_second": 6.65,
+      "total_generation_time_s": 30.24,
+      "peak_memory_mb": 2712.87,
+      "fact_retention_score": 56.3,
+      "samples_tested": 3,
+      "errors": []
+    },
+    {
+      "model_name": "tinyllama 1 1b chat v1 0 Q4_K_M",
+      "model_path": "C:\\Users\\siddh\\OneDrive\\Desktop\\Projects\\File-Search-Engine-1\\models\\tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+      "model_size_mb": 637.81,
+      "load_time_s": 0.1,
+      "embedding_latency_ms": 18.21,
+      "first_token_latency_ms": 58.26,
+      "tokens_per_second": 16.73,
+      "total_generation_time_s": 13.21,
+      "peak_memory_mb": 756.91,
+      "fact_retention_score": 60.0,
+      "samples_tested": 3,
+      "errors": []
+    }
+  ]
+}

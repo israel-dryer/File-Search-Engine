@@ -108,11 +108,13 @@ async def delete_model(request: dict):
         raise HTTPException(status_code=400, detail="Model path required")
     
     try:
-        if os.path.exists(model_path):
-            os.remove(model_path)
+        from model_manager import delete_model
+        if delete_model(model_path):
             return {"status": "success", "message": "Model deleted"}
         else:
             raise HTTPException(status_code=404, detail="Model file not found")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -303,36 +305,40 @@ async def search_files(request: SearchRequest):
         from llm_integration import smart_summary
 
         for idx, result in enumerate(results):
+            # Get file info FIRST so we can pass it to smart_summary
+            faiss_idx = result.get('faiss_idx')
+            file_info = database.get_file_by_faiss_index(faiss_idx) if faiss_idx is not None else None
+            file_name = file_info['filename'] if file_info else None
+            file_path = file_info['path'] if file_info else None
+            
             # For top 3 results, use Smart Summary (LLM) if configured
             if idx < 3:
-                summary = smart_summary(result['document'], request.query, provider, api_key, model_path)
+                summary = smart_summary(result['document'], request.query, provider, api_key, model_path, file_name=file_name)
             else:
                 # Fallback to fast summary for others to save time
                 summary = summarize(result['document'], provider, api_key, model_path, question=request.query)
             
+            # Add file context to snippets for AI answer
+            file_prefix = f"[From: {file_name}] " if file_name else ""
             # Format context for AI (Nexus Insight)
             # We prefer using the smart summary if available, otherwise raw document text
             if summary and len(summary) > 20:
-                context_snippets.append(summary)
+                context_snippets.append(f"{file_prefix}{summary}")
             else:
-                context_snippets.append(result['document'][:500])
+                context_snippets.append(f"{file_prefix}{result['document'][:500]}")
 
             # Convert tags from string to list if needed
             result_tags = result.get('tags', '')
             if isinstance(result_tags, str):
                 result_tags = [t.strip() for t in result_tags.split(',') if t.strip()]
             
-            # Get file info from FAISS index
-            faiss_idx = result.get('faiss_idx')
-            file_info = database.get_file_by_faiss_index(faiss_idx) if faiss_idx is not None else None
-            
             processed_results.append(SearchResult(
                 document=result['document'],
                 summary=summary,
                 tags=result_tags,
                 faiss_idx=faiss_idx,
-                file_path=file_info['path'] if file_info else None,
-                file_name=file_info['filename'] if file_info else None
+                file_path=file_path,
+                file_name=file_name
             ))
         
         # Generate AI Answer if we have local model OR cloud provider
@@ -386,7 +392,7 @@ async def delete_all_search_history():
     """Delete all search history."""
     try:
         count = database.delete_all_search_history()
-        return {"status": "success", "message": f"Deleted {count} history items"}
+        return {"status": "success", "message": f"Deleted {count} history items", "deleted_count": count}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

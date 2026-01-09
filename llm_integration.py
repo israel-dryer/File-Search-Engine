@@ -149,14 +149,16 @@ def generate_ai_answer(context, question, provider, api_key=None, model_path=Non
     if not client:
         return "Error: Could not initialize AI model. Check settings and API keys."
 
-    prompt_text = f"""System: You are a helpful AI assistant. Answer the question based ONLY on the provided context. If the answer is not in the context, say "I couldn't find the answer in the documents."
-    
-Context:
+    prompt_text = f"""You are a document search assistant. Answer the question using ONLY facts from the provided documents.
+
+IMPORTANT: Quote specific content, data, numbers, or key details from the documents. Reference which file the information comes from when possible. Don't give generic answers.
+
+Documents:
 {context}
 
 Question: {question}
 
-Answer:"""
+Answer (cite specific details from the documents):"""
 
     try:
         # Handle Local LLM (LlamaCpp)
@@ -180,8 +182,8 @@ Answer:"""
             from langchain_core.messages import HumanMessage, SystemMessage
 
             messages = [
-                SystemMessage(content="You are a helpful AI assistant. Answer based ONLY on the provided context."),
-                HumanMessage(content=f"Context:\n{context}\n\nQuestion: {question}")
+                SystemMessage(content="You are a document search assistant. Quote specific content, data, numbers, or details from the documents. Reference file names when available."),
+                HumanMessage(content=f"Documents:\n{context}\n\nQuestion: {question}\n\nAnswer with specific details:")
             ]
 
             response = client.invoke(messages)
@@ -191,9 +193,10 @@ Answer:"""
         print(f"Generation error ({provider}): {e}")
         return f"Error generating answer: {str(e)}"
 
-def smart_summary(text, query, provider, api_key=None, model_path=None):
+def smart_summary(text, query, provider, api_key=None, model_path=None, file_name=None):
     """
     Generates a contextual summary of the text specifically related to the query.
+    Optionally includes file_name for better context in the response.
     """
     if not text:
         return ""
@@ -205,15 +208,19 @@ def smart_summary(text, query, provider, api_key=None, model_path=None):
 
     # Truncate text to avoid token limits (approx 3000 chars ~ 750 tokens)
     truncated_text = text[:3000]
+    
+    file_context = f" from '{file_name}'" if file_name else ""
 
-    prompt_text = f"""Analyze the following document excerpt and extract information relevant to the user's query: "{query}".
-If the document contains the answer or relevant facts, summarize them concisely (max 2 sentences).
-If the document is not relevant to the query, just say "No relevant info".
+    prompt_text = f"""Analyze this document excerpt{file_context} for the query: "{query}".
 
-Document Excerpt:
+Extract and quote specific facts, data, or content that answers the query. Be specific - include numbers, names, dates, or key details from the document.
+
+If irrelevant, say "No relevant info".
+
+Document:
 {truncated_text}
 
-Summary:"""
+Key findings:"""
 
     try:
         # Handle Local LLM

@@ -148,6 +148,182 @@ class TestDatabaseSearchHistory(unittest.TestCase):
         if hasattr(database, 'delete_all_search_history'):
             deleted_count = database.delete_all_search_history()
             self.assertIsInstance(deleted_count, int)
+    
+    def test_delete_single_history_item(self):
+        """Test deleting a single search history item."""
+        import database
+        
+        # Add a search entry
+        database.add_search_history("delete single test", 1, 10)
+        
+        # Get the most recent entry
+        history = database.get_search_history(limit=1)
+        if history:
+            history_id = history[0]['id']
+            result = database.delete_search_history_item(history_id)
+            self.assertTrue(result)
+    
+    def test_delete_nonexistent_history_item(self):
+        """Test deleting a history item that doesn't exist."""
+        import database
+        
+        # Try to delete a non-existent ID
+        result = database.delete_search_history_item(999999)
+        self.assertFalse(result)
+
+
+class TestDatabaseFileOperations(unittest.TestCase):
+    """Tests for file CRUD operations."""
+    
+    @classmethod
+    def setUpClass(cls):
+        """Set up test database."""
+        import database
+        database.init_database()
+    
+    def test_get_file_by_path_existing(self):
+        """Test retrieving a file by path that exists."""
+        import database
+        from datetime import datetime
+        
+        test_path = '/test/get_by_path/existing.pdf'
+        database.add_file(
+            path=test_path,
+            filename='existing.pdf',
+            extension='.pdf',
+            size_bytes=2048,
+            modified_date=datetime.now(),
+            chunk_count=2,
+            faiss_start_idx=100,
+            faiss_end_idx=101
+        )
+        
+        file_info = database.get_file_by_path(test_path)
+        
+        self.assertIsNotNone(file_info)
+        self.assertEqual(file_info['path'], test_path)
+        self.assertEqual(file_info['filename'], 'existing.pdf')
+        self.assertEqual(file_info['size_bytes'], 2048)
+    
+    def test_get_file_by_path_nonexistent(self):
+        """Test retrieving a file by path that doesn't exist."""
+        import database
+        
+        file_info = database.get_file_by_path('/nonexistent/path/file.txt')
+        self.assertIsNone(file_info)
+    
+    def test_delete_file(self):
+        """Test deleting a file from the database."""
+        import database
+        from datetime import datetime
+        
+        test_path = '/test/delete/todelete.pdf'
+        file_id = database.add_file(
+            path=test_path,
+            filename='todelete.pdf',
+            extension='.pdf',
+            size_bytes=512,
+            modified_date=datetime.now(),
+            chunk_count=1,
+            faiss_start_idx=200,
+            faiss_end_idx=200
+        )
+        
+        # Verify file exists
+        file_info = database.get_file_by_path(test_path)
+        self.assertIsNotNone(file_info)
+        
+        # Delete the file
+        database.delete_file(file_info['id'])
+        
+        # Verify file is gone
+        file_info_after = database.get_file_by_path(test_path)
+        self.assertIsNone(file_info_after)
+    
+    def test_get_file_by_faiss_index_not_found(self):
+        """Test retrieving file by FAISS index that doesn't exist."""
+        import database
+        
+        file_info = database.get_file_by_faiss_index(888888)
+        self.assertIsNone(file_info)
+
+
+class TestDatabasePreferences(unittest.TestCase):
+    """Tests for preferences storage."""
+    
+    @classmethod
+    def setUpClass(cls):
+        """Set up test database."""
+        import database
+        database.init_database()
+    
+    def test_set_and_get_preference(self):
+        """Test setting and getting a preference."""
+        import database
+        
+        database.set_preference('test_key', 'test_value')
+        value = database.get_preference('test_key')
+        
+        self.assertEqual(value, 'test_value')
+    
+    def test_get_nonexistent_preference(self):
+        """Test getting a preference that doesn't exist."""
+        import database
+        
+        value = database.get_preference('nonexistent_key_12345')
+        self.assertIsNone(value)
+    
+    def test_update_preference(self):
+        """Test updating an existing preference."""
+        import database
+        
+        database.set_preference('update_key', 'original_value')
+        database.set_preference('update_key', 'updated_value')
+        
+        value = database.get_preference('update_key')
+        self.assertEqual(value, 'updated_value')
+    
+    def test_preference_with_special_characters(self):
+        """Test preferences with special characters."""
+        import database
+        
+        special_value = "path/with/slashes and spaces & symbols!"
+        database.set_preference('special_key', special_value)
+        
+        value = database.get_preference('special_key')
+        self.assertEqual(value, special_value)
+
+
+class TestDatabaseConnection(unittest.TestCase):
+    """Tests for database connection handling."""
+    
+    def test_get_connection_returns_valid_connection(self):
+        """Test that get_connection returns a valid SQLite connection."""
+        import database
+        
+        conn = database.get_connection()
+        self.assertIsNotNone(conn)
+        
+        # Test that we can execute a query
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        result = cursor.fetchone()
+        self.assertEqual(result[0], 1)
+        
+        conn.close()
+    
+    def test_multiple_connections(self):
+        """Test that multiple connections work correctly."""
+        import database
+        
+        conn1 = database.get_connection()
+        conn2 = database.get_connection()
+        
+        self.assertIsNotNone(conn1)
+        self.assertIsNotNone(conn2)
+        
+        conn1.close()
+        conn2.close()
 
 
 if __name__ == '__main__':

@@ -18,8 +18,10 @@ import os
 import argparse
 import time
 
-# Add the workspace directory to the Python path
-sys.path.insert(0, os.path.dirname(__file__))
+# Add the workspace directory (project root) to the Python path
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+sys.path.insert(0, PROJECT_ROOT)
 
 # ANSI color codes for terminal output
 class Colors:
@@ -44,14 +46,14 @@ def run_quick_tests():
     
     # Add all test modules except slow ones
     quick_modules = [
-        'tests.test_api',
-        'tests.test_database',
-        'tests.test_file_processing',
-        'tests.test_indexing',
-        'tests.test_search',
-        'tests.test_model_manager',
-        'tests.test_benchmarks',
-        'tests.test_config_and_edge_cases',
+        'backend.tests.test_api',
+        'backend.tests.test_database',
+        'backend.tests.test_file_processing',
+        'backend.tests.test_indexing',
+        'backend.tests.test_search',
+        'backend.tests.test_model_manager',
+        'backend.tests.test_benchmarks',
+        'backend.tests.test_config_and_edge_cases',
     ]
     
     for module in quick_modules:
@@ -65,7 +67,8 @@ def run_quick_tests():
 def run_all_tests():
     """Run all tests including slow model comparison tests."""
     loader = unittest.TestLoader()
-    suite = loader.discover('tests', pattern='test_*.py')
+    tests_dir = os.path.join(PROJECT_ROOT, 'backend', 'tests')
+    suite = loader.discover(tests_dir, pattern='test_*.py', top_level_dir=PROJECT_ROOT)
     return suite
 
 def main():
@@ -90,9 +93,9 @@ def main():
             import pytest
             print("Running with pytest-cov...")
             sys.exit(pytest.main([
-                'tests',
+                os.path.join(PROJECT_ROOT, 'backend', 'tests'),
                 '-v',
-                '--cov=.',
+                f'--cov={os.path.join(PROJECT_ROOT, "backend")}',
                 '--cov-report=html',
                 '--cov-report=term-missing'
             ]))

@@ -4,7 +4,9 @@ import threading
 import shutil
 import psutil
 
-MODELS_DIR = "models"
+# Path configuration for new folder structure
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODELS_DIR = os.path.join(BASE_DIR, 'models')
 os.makedirs(MODELS_DIR, exist_ok=True)
 
 # Expanded list of GGUF models with metadata
@@ -222,6 +224,183 @@ AVAILABLE_MODELS = [
         "use_case": "Chat, Complex Instructions, Summarization",
         "recommended": False,
         "url": "https://huggingface.co/TheBloke/openchat-3.5-0106-GGUF/resolve/main/openchat-3.5-0106.Q4_K_M.gguf"
+    },
+    
+    # ============================================================
+    # HIGH-QUALITY QUANTIZATIONS (Q5, Q6, Q8) - For users with more RAM
+    # ============================================================
+    {
+        "id": "Meta-Llama-3-8B-Instruct.Q5_K_M",
+        "name": "Llama 3 8B Instruct (Q5 - Higher Quality)",
+        "description": "Higher quality quantization. Better accuracy than Q4, slightly larger.",
+        "size": "5.73 GB",
+        "size_bytes": 6150000000,
+        "ram_required": 12,
+        "category": "large",
+        "quantization": "Q5_K_M",
+        "use_case": "Premium Summarization, Reasoning",
+        "recommended": False,
+        "url": "https://huggingface.co/MaziyarPanahi/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct.Q5_K_M.gguf"
+    },
+    {
+        "id": "Meta-Llama-3-8B-Instruct.Q6_K",
+        "name": "Llama 3 8B Instruct (Q6 - Near Original)",
+        "description": "Near-original quality. Minimal quality loss from full precision.",
+        "size": "6.60 GB",
+        "size_bytes": 7080000000,
+        "ram_required": 14,
+        "category": "large",
+        "quantization": "Q6_K",
+        "use_case": "Maximum Quality 8B Inference",
+        "recommended": False,
+        "url": "https://huggingface.co/MaziyarPanahi/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct.Q6_K.gguf"
+    },
+    {
+        "id": "Meta-Llama-3-8B-Instruct.Q8_0",
+        "name": "Llama 3 8B Instruct (Q8 - Best Quality)",
+        "description": "Highest quality 8-bit quantization. Virtually identical to original.",
+        "size": "8.54 GB",
+        "size_bytes": 9170000000,
+        "ram_required": 16,
+        "category": "premium",
+        "quantization": "Q8_0",
+        "use_case": "Best Possible 8B Quality",
+        "recommended": True,
+        "url": "https://huggingface.co/MaziyarPanahi/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct.Q8_0.gguf"
+    },
+    {
+        "id": "Mistral-7B-Instruct-v0.3.Q8_0",
+        "name": "Mistral 7B Instruct v0.3 (Q8 - Best Quality)",
+        "description": "Maximum quality Mistral. Excellent for document summarization.",
+        "size": "7.70 GB",
+        "size_bytes": 8270000000,
+        "ram_required": 14,
+        "category": "premium",
+        "quantization": "Q8_0",
+        "use_case": "Premium Summarization, Analysis",
+        "recommended": False,
+        "url": "https://huggingface.co/MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF/resolve/main/Mistral-7B-Instruct-v0.3.Q8_0.gguf"
+    },
+    
+    # ============================================================
+    # EXTRA-LARGE MODELS (13B) - Requires 16GB+ RAM
+    # ============================================================
+    {
+        "id": "llama-2-13b-chat.Q4_K_M",
+        "name": "Llama 2 13B Chat",
+        "description": "Meta's 13B parameter model. Significantly smarter than 7B variants.",
+        "size": "7.87 GB",
+        "size_bytes": 8450000000,
+        "ram_required": 16,
+        "category": "extra-large",
+        "quantization": "Q4_K_M",
+        "use_case": "Advanced Chat, Complex Reasoning",
+        "recommended": True,
+        "url": "https://huggingface.co/TheBloke/Llama-2-13B-chat-GGUF/resolve/main/llama-2-13b-chat.Q4_K_M.gguf"
+    },
+    {
+        "id": "llama-2-13b-chat.Q5_K_M",
+        "name": "Llama 2 13B Chat (Q5 - Higher Quality)",
+        "description": "Higher quality 13B. Best balance for 32GB RAM systems.",
+        "size": "9.23 GB",
+        "size_bytes": 9910000000,
+        "ram_required": 18,
+        "category": "extra-large",
+        "quantization": "Q5_K_M",
+        "use_case": "Premium Chat, Deep Analysis",
+        "recommended": True,
+        "url": "https://huggingface.co/TheBloke/Llama-2-13B-chat-GGUF/resolve/main/llama-2-13b-chat.Q5_K_M.gguf"
+    },
+    {
+        "id": "codellama-13b-instruct.Q4_K_M",
+        "name": "Code Llama 13B Instruct",
+        "description": "Meta's code-focused 13B model. Excellent for code analysis.",
+        "size": "7.87 GB",
+        "size_bytes": 8450000000,
+        "ram_required": 16,
+        "category": "extra-large",
+        "quantization": "Q4_K_M",
+        "use_case": "Code Analysis, Programming",
+        "recommended": False,
+        "url": "https://huggingface.co/TheBloke/CodeLlama-13B-Instruct-GGUF/resolve/main/codellama-13b-instruct.Q4_K_M.gguf"
+    },
+    {
+        "id": "mixtral-8x7b-instruct-v0.1.Q4_K_M",
+        "name": "Mixtral 8x7B Instruct (MoE)",
+        "description": "Mistral's MoE model. 46.7B params, only uses ~13B actively. Very capable.",
+        "size": "26.4 GB",
+        "size_bytes": 28350000000,
+        "ram_required": 28,
+        "category": "extra-large",
+        "quantization": "Q4_K_M",
+        "use_case": "Expert-level Tasks, Complex Analysis",
+        "recommended": True,
+        "url": "https://huggingface.co/TheBloke/Mixtral-8x7B-Instruct-v0.1-GGUF/resolve/main/mixtral-8x7b-instruct-v0.1.Q4_K_M.gguf"
+    },
+    {
+        "id": "nous-hermes-2-mixtral-8x7b-dpo.Q4_K_M",
+        "name": "Nous Hermes 2 Mixtral 8x7B",
+        "description": "Fine-tuned Mixtral with improved instruction following.",
+        "size": "26.4 GB",
+        "size_bytes": 28350000000,
+        "ram_required": 28,
+        "category": "extra-large",
+        "quantization": "Q4_K_M",
+        "use_case": "Advanced Instructions, Research",
+        "recommended": False,
+        "url": "https://huggingface.co/TheBloke/Nous-Hermes-2-Mixtral-8x7B-DPO-GGUF/resolve/main/nous-hermes-2-mixtral-8x7b-dpo.Q4_K_M.gguf"
+    },
+    {
+        "id": "deepseek-coder-6.7b-instruct.Q5_K_M",
+        "name": "DeepSeek Coder 6.7B (Q5)",
+        "description": "Excellent for code understanding and analysis in documents.",
+        "size": "5.00 GB",
+        "size_bytes": 5370000000,
+        "ram_required": 10,
+        "category": "large",
+        "quantization": "Q5_K_M",
+        "use_case": "Code Review, Technical Docs",
+        "recommended": False,
+        "url": "https://huggingface.co/TheBloke/deepseek-coder-6.7B-instruct-GGUF/resolve/main/deepseek-coder-6.7b-instruct.Q5_K_M.gguf"
+    },
+    {
+        "id": "yi-1.5-9b-chat.Q5_K_M",
+        "name": "Yi 1.5 9B Chat (Q5)",
+        "description": "01.AI's powerful 9B model. Strong multilingual and reasoning.",
+        "size": "6.50 GB",
+        "size_bytes": 6980000000,
+        "ram_required": 12,
+        "category": "large",
+        "quantization": "Q5_K_M",
+        "use_case": "Multilingual, Advanced Reasoning",
+        "recommended": False,
+        "url": "https://huggingface.co/mradermacher/Yi-1.5-9B-Chat-GGUF/resolve/main/Yi-1.5-9B-Chat.Q5_K_M.gguf"
+    },
+    {
+        "id": "solar-10.7b-instruct-v1.0.Q4_K_M",
+        "name": "Solar 10.7B Instruct",
+        "description": "Upstage's 10.7B model. Top performer in its class.",
+        "size": "6.46 GB",
+        "size_bytes": 6940000000,
+        "ram_required": 12,
+        "category": "large",
+        "quantization": "Q4_K_M",
+        "use_case": "Instructions, Analysis, Chat",
+        "recommended": False,
+        "url": "https://huggingface.co/TheBloke/SOLAR-10.7B-Instruct-v1.0-GGUF/resolve/main/solar-10.7b-instruct-v1.0.Q4_K_M.gguf"
+    },
+    {
+        "id": "qwen2-7b-instruct.Q5_K_M",
+        "name": "Qwen 2 7B Instruct (Q5)",
+        "description": "Alibaba's latest. Excellent multilingual and coding capabilities.",
+        "size": "5.50 GB",
+        "size_bytes": 5900000000,
+        "ram_required": 10,
+        "category": "large",
+        "quantization": "Q5_K_M",
+        "use_case": "Multilingual, Code, General",
+        "recommended": True,
+        "url": "https://huggingface.co/Qwen/Qwen2-7B-Instruct-GGUF/resolve/main/qwen2-7b-instruct-q5_k_m.gguf"
     }
 ]
 

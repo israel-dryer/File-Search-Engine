@@ -3,7 +3,11 @@ import os
 from datetime import datetime
 from typing import List, Dict, Optional
 
-DATABASE_PATH = "metadata.db"
+# Path configuration for new folder structure
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+os.makedirs(DATA_DIR, exist_ok=True)
+DATABASE_PATH = os.path.join(DATA_DIR, 'metadata.db')
 
 def get_connection():
     """Create and return a database connection."""

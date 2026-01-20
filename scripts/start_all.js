@@ -114,7 +114,7 @@ async function main() {
 
     // Start Backend
     log('Backend', colors.blue, 'Starting FastAPI server...');
-    const backendProcess = spawn(pythonExe, ['-m', 'uvicorn', 'api:app', '--reload', '--host', '0.0.0.0', '--port', String(BACKEND_PORT)], {
+    const backendProcess = spawn(pythonExe, ['-m', 'uvicorn', 'backend.api:app', '--reload', '--host', '0.0.0.0', '--port', String(BACKEND_PORT)], {
         cwd: path.resolve(__dirname, '..'),
         shell: true,
         stdio: ['ignore', 'pipe', 'pipe']

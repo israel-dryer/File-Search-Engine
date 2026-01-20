@@ -4,9 +4,9 @@ import pickle
 import numpy as np
 from datetime import datetime
 from langchain_text_splitters import CharacterTextSplitter
-from llm_integration import get_embeddings, get_tags
-from file_processing import extract_text
-import database
+from backend.llm_integration import get_embeddings, get_tags
+from backend.file_processing import extract_text
+from backend import database
 
 def create_index(folder_paths, provider, api_key=None, model_path=None, progress_callback=None):
     """

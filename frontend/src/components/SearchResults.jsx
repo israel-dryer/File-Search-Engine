@@ -43,7 +43,7 @@ const SearchResults = ({ results, aiAnswer }) => {
                                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
                                     <Bot className="w-5 h-5 text-primary-foreground" />
                                 </div>
-                                <h3 className="text-lg font-bold text-3d tracking-tight">Nexus AI Insight</h3>
+                                <h3 className="text-lg font-bold text-3d tracking-tight">AI Insights</h3>
                             </div>
 
                             <div className="prose prose-invert max-w-none">

@@ -7,13 +7,20 @@ import os
 import configparser
 import tkinter as tk
 from tkinter import filedialog
-from indexing import create_index, save_index, load_index
-from search import search
-from llm_integration import summarize, get_embeddings, generate_ai_answer
-from file_processing import extract_text
-from model_manager import get_available_models, get_local_models, start_download, get_download_status
-import database
+from backend.indexing import create_index, save_index, load_index
+from backend.search import search
+from backend.llm_integration import summarize, get_embeddings, generate_ai_answer
+from backend.file_processing import extract_text
+from backend.model_manager import get_available_models, get_local_models, start_download, get_download_status
+from backend import database
 import time
+
+# Path configuration for new folder structure
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+CONFIG_PATH = os.path.join(BASE_DIR, 'config.ini')
+INDEX_PATH = os.path.join(DATA_DIR, 'index.faiss')
+BENCHMARK_PATH = os.path.join(DATA_DIR, 'benchmark_results.json')
 
 app = FastAPI()
 
@@ -32,29 +39,29 @@ docs = []
 tags = []
 
 def load_config():
-    if not os.path.exists('config.ini'):
+    if not os.path.exists(CONFIG_PATH):
         config = configparser.ConfigParser()
         config['General'] = {'folder': '', 'auto_index': 'False'}
         config['APIKeys'] = {'openai_api_key': ''}
         config['LocalLLM'] = {'model_path': '', 'provider': 'openai'}
-        with open('config.ini', 'w') as configfile:
+        with open(CONFIG_PATH, 'w') as configfile:
             config.write(configfile)
     
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read(CONFIG_PATH)
     return config
 
 def save_config_file(config):
-    with open('config.ini', 'w') as configfile:
+    with open(CONFIG_PATH, 'w') as configfile:
         config.write(configfile)
 
 # Initialize index on startup if available
 @app.on_event("startup")
 async def startup_event():
     global index, docs, tags
-    if os.path.exists('index.faiss'):
+    if os.path.exists(INDEX_PATH):
         try:
-            index, docs, tags = load_index('index.faiss')
+            index, docs, tags = load_index(INDEX_PATH)
             print("Loaded existing index.")
         except Exception as e:
             print(f"Error loading index: {e}")
@@ -108,7 +115,7 @@ async def delete_model(request: dict):
         raise HTTPException(status_code=400, detail="Model path required")
     
     try:
-        from model_manager import delete_model
+        from backend.model_manager import delete_model
         if delete_model(model_path):
             return {"status": "success", "message": "Model deleted"}
         else:
@@ -148,7 +155,7 @@ def run_benchmark_task():
         benchmark_status["error"] = None
         
         # Import and run benchmarks
-        from benchmark_models import run_all_benchmarks, save_results
+        from scripts.benchmark_models import run_all_benchmarks, save_results
         
         results = run_all_benchmarks(verbose=False)
         if results:
@@ -188,10 +195,9 @@ async def get_benchmark_results():
     
     # Try to load from file if not in memory
     if benchmark_results is None:
-        results_file = "benchmark_results.json"
-        if os.path.exists(results_file):
+        if os.path.exists(BENCHMARK_PATH):
             import json
-            with open(results_file, 'r') as f:
+            with open(BENCHMARK_PATH, 'r') as f:
                 benchmark_results = json.load(f)
     
     if benchmark_results is None:
@@ -302,7 +308,7 @@ async def search_files(request: SearchRequest):
         processed_results = []
         context_snippets = []
         
-        from llm_integration import smart_summary
+        from backend.llm_integration import smart_summary
 
         for idx, result in enumerate(results):
             # Get file info FIRST so we can pass it to smart_summary
@@ -511,7 +517,7 @@ def run_indexing(config, folders):
             progress_callback=indexing_progress_callback
         )
         if new_index:
-            save_index(new_index, new_docs, new_tags, 'index.faiss')
+            save_index(new_index, new_docs, new_tags, INDEX_PATH)
             index, docs, tags = new_index, new_docs, new_tags
             print("Indexing completed successfully.")
             indexing_status["running"] = False

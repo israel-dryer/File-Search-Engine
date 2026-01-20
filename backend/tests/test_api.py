@@ -8,7 +8,7 @@ search, models, benchmarks, history, and file operations.
 import unittest
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
-from api import app
+from backend.api import app
 
 
 class TestAPIConfig(unittest.TestCase):
@@ -18,7 +18,7 @@ class TestAPIConfig(unittest.TestCase):
         """Set up test client before each test method."""
         self.client = TestClient(app)
     
-    @patch('api.load_config')
+    @patch('backend.api.load_config')
     def test_get_config(self, mock_load_config):
         """Test getting configuration."""
         mock_config = MagicMock()
@@ -44,7 +44,7 @@ class TestAPIConfig(unittest.TestCase):
         self.assertEqual(data['auto_index'], True)
         self.assertEqual(data['provider'], 'local')
 
-    @patch('api.save_config_file')
+    @patch('backend.api.save_config_file')
     def test_update_config(self, mock_save_config):
         """Test updating configuration."""
         response = self.client.post("/api/config", json={
@@ -67,20 +67,20 @@ class TestAPISearch(unittest.TestCase):
         """Set up test client before each test method."""
         self.client = TestClient(app)
 
-    @patch('api.load_config')
-    @patch('api.search')
-    @patch('api.summarize')
-    @patch('llm_integration.smart_summary')
-    @patch('api.get_embeddings')
+    @patch('backend.api.load_config')
+    @patch('backend.api.search')
+    @patch('backend.api.summarize')
+    @patch('backend.llm_integration.smart_summary')
+    @patch('backend.api.get_embeddings')
     def test_search_endpoint(self, mock_get_embeddings, mock_smart_summary, mock_summarize, mock_search, mock_load_config):
         """Test the search endpoint."""
         mock_config = MagicMock()
         mock_config.get.return_value = 'openai'
         mock_load_config.return_value = mock_config
         
-        with patch('api.index', MagicMock()), \
-             patch('api.docs', []), \
-             patch('api.tags', []):
+        with patch('backend.api.index', MagicMock()), \
+             patch('backend.api.docs', []), \
+             patch('backend.api.tags', []):
             
             mock_search.return_value = [{
                 'document': 'content',
@@ -105,7 +105,7 @@ class TestAPISearch(unittest.TestCase):
 
     def test_search_without_index(self):
         """Test search when no index is loaded."""
-        with patch('api.index', None):
+        with patch('backend.api.index', None):
             response = self.client.post("/api/search", json={
                 "query": "test query"
             })
@@ -119,7 +119,7 @@ class TestAPIModels(unittest.TestCase):
         """Set up test client before each test method."""
         self.client = TestClient(app)
 
-    @patch('api.get_available_models')
+    @patch('backend.api.get_available_models')
     def test_list_available_models(self, mock_get_available):
         """Test listing available models."""
         mock_get_available.return_value = [
@@ -134,7 +134,7 @@ class TestAPIModels(unittest.TestCase):
         self.assertIsInstance(data, list)
         self.assertEqual(len(data), 2)
 
-    @patch('api.get_local_models')
+    @patch('backend.api.get_local_models')
     def test_list_local_models(self, mock_get_local):
         """Test listing local downloaded models."""
         mock_get_local.return_value = [
@@ -147,7 +147,7 @@ class TestAPIModels(unittest.TestCase):
         data = response.json()
         self.assertIsInstance(data, list)
 
-    @patch('api.start_download')
+    @patch('backend.api.start_download')
     def test_download_model_endpoint(self, mock_start_download):
         """Test starting model download."""
         mock_start_download.return_value = (True, "Download started")
@@ -158,7 +158,7 @@ class TestAPIModels(unittest.TestCase):
         data = response.json()
         self.assertIn('status', data)
 
-    @patch('api.get_download_status')
+    @patch('backend.api.get_download_status')
     def test_download_status_endpoint(self, mock_get_status):
         """Test getting download status."""
         mock_get_status.return_value = {
@@ -174,7 +174,7 @@ class TestAPIModels(unittest.TestCase):
         self.assertIn('downloading', data)
         self.assertIn('progress', data)
 
-    @patch('model_manager.delete_model')
+    @patch('backend.model_manager.delete_model')
     def test_delete_model(self, mock_delete):
         """Test deleting a model."""
         mock_delete.return_value = True
@@ -204,16 +204,16 @@ class TestAPIBenchmarks(unittest.TestCase):
         data = response.json()
         self.assertIn('running', data)
 
-    @patch('api.benchmark_results', {'test': 'results'})
+    @patch('backend.api.benchmark_results', {'test': 'results'})
     def test_get_benchmark_results_with_data(self):
         """Test getting benchmark results when available."""
-        with patch('api.benchmark_results', {'model': 'test', 'score': 100}):
+        with patch('backend.api.benchmark_results', {'model': 'test', 'score': 100}):
             response = self.client.get("/api/benchmarks/results")
             self.assertEqual(response.status_code, 200)
 
     def test_run_benchmarks_endpoint(self):
         """Test starting benchmarks."""
-        with patch('api.benchmark_status', {'running': False}):
+        with patch('backend.api.benchmark_status', {'running': False}):
             response = self.client.post("/api/benchmarks/run")
             self.assertEqual(response.status_code, 200)
 
@@ -225,7 +225,7 @@ class TestAPISearchHistory(unittest.TestCase):
         """Set up test client before each test method."""
         self.client = TestClient(app)
 
-    @patch('database.get_search_history')
+    @patch('backend.database.get_search_history')
     def test_get_search_history(self, mock_get_history):
         """Test getting search history."""
         mock_get_history.return_value = [
@@ -238,7 +238,7 @@ class TestAPISearchHistory(unittest.TestCase):
         data = response.json()
         self.assertIsInstance(data, list)
 
-    @patch('database.delete_search_history_item')
+    @patch('backend.database.delete_search_history_item')
     def test_delete_search_history_item(self, mock_delete):
         """Test deleting a single history item."""
         mock_delete.return_value = True
@@ -247,7 +247,7 @@ class TestAPISearchHistory(unittest.TestCase):
         
         self.assertEqual(response.status_code, 200)
 
-    @patch('database.delete_all_search_history')
+    @patch('backend.database.delete_all_search_history')
     def test_delete_all_search_history(self, mock_delete_all):
         """Test deleting all search history."""
         mock_delete_all.return_value = 5
@@ -266,7 +266,7 @@ class TestAPIFileOperations(unittest.TestCase):
         """Set up test client before each test method."""
         self.client = TestClient(app)
 
-    @patch('database.get_all_files')
+    @patch('backend.database.get_all_files')
     def test_list_indexed_files(self, mock_get_files):
         """Test listing indexed files."""
         mock_get_files.return_value = [
@@ -321,8 +321,8 @@ class TestAPIIndexing(unittest.TestCase):
         """Set up test client before each test method."""
         self.client = TestClient(app)
 
-    @patch('api.load_config')
-    @patch('api.BackgroundTasks.add_task')
+    @patch('backend.api.load_config')
+    @patch('backend.api.BackgroundTasks.add_task')
     def test_index_endpoint(self, mock_add_task, mock_load_config):
         """Test the index endpoint."""
         mock_config = MagicMock()

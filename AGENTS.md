@@ -225,6 +225,21 @@ model_path = models/phi-2.Q4_K_M.gguf
 | No search results | Broader terms, re-index folder |
 | CORS errors | Backend :8000, Frontend :5173 |
 
+## Agent Skills
+
+When working on file processing tasks, consult the relevant skill documentation:
+
+| File Type | Skill Location |
+|-----------|----------------|
+| PDF (.pdf) | `.agent/skills/pdf/SKILL.md` |
+| Word (.docx) | `.agent/skills/docx/SKILL.md` |
+| Excel (.xlsx, .xls) | `.agent/skills/xlsx/SKILL.md` |
+| PowerPoint (.pptx) | `.agent/skills/pptx/SKILL.md` |
+
+**Usage**: Before modifying `file_processing.py` or adding new file type support, read the corresponding skill file for best practices and patterns.
+
+---
+
 ## Mandatory Rules
 
 1. **Run tests before AND after changes** - `npm run test`
@@ -238,6 +253,27 @@ model_path = models/phi-2.Q4_K_M.gguf
 ## Change Log
 
 > **CRITICAL: Add entry here after EVERY change with date, description, and files.**
+
+### 2026-01-21
+- **Expanded model library for 32GB RAM systems** - Added 14 new model options
+  - `model_manager.py`: Added Q5_K_M, Q6_K, Q8_0 quantizations for higher quality
+  - New 13B models: Llama 2 13B, CodeLlama 13B
+  - New MoE models: Mixtral 8x7B (26.4GB), Nous Hermes 2 Mixtral
+  - New models: Qwen 2 7B, Yi 1.5 9B, Solar 10.7B, DeepSeek Coder 6.7B
+  - Categories now include: small, medium, large, extra-large, premium
+- **Fixed LLM model loading error** - Diagnosed why "Local model failed to load" appeared
+  - Root cause: llama-2-7b and mistral-7b models corrupted/incompatible with llama_cpp version
+  - `config.ini`: Changed model_path from llama-2-7b to phi-2.Q4_K_M.gguf (working model)
+  - Created `test_models_quick.py` and `test_quality.py` for model diagnostics
+  - 2/4 models work: TinyLlama (fast, 4.1s) and Phi-2 (quality, 8.7s)
+- **Renamed "Nexus AI Insight" to "AI Insights"** in UI
+  - `frontend/src/components/SearchResults.jsx`: Updated title text
+- **Removed corrupted model files** - Deleted llama-2-7b-chat.Q4_K_M.gguf and mistral-7b-instruct-v0.1.Q4_K_M.gguf
+- **Added agent skills for file processing** - Created 4 document processing skills
+  - `.agent/skills/pdf/SKILL.md`, `.agent/skills/docx/SKILL.md`
+  - `.agent/skills/xlsx/SKILL.md`, `.agent/skills/pptx/SKILL.md`
+  - Added `Agent Skills` section to `AGENTS.md` referencing these files
+  - Updated `.gitignore` to exclude `.agent/skills/`
 
 ### 2026-01-09
 - **Enhanced LLM output quality** - AI now references filenames and quotes specific content

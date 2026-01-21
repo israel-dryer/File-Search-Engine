@@ -59,6 +59,49 @@ class TestDatabase(unittest.TestCase):
         database.add_folder_to_history('/test/hist2')
         hist2 = database.get_folder_history()
         self.assertEqual(hist2[0]['path'], '/test/hist2')
+    
+    def test_delete_folder_history_item(self):
+        """Test deleting a single folder from history."""
+        from backend import database
+        
+        # Add a test folder
+        test_path = '/test/delete_single'
+        database.add_folder_to_history(test_path)
+        
+        # Verify it exists
+        hist = database.get_folder_history()
+        self.assertTrue(any(h['path'] == test_path for h in hist))
+        
+        # Delete it
+        result = database.delete_folder_history_item(test_path)
+        self.assertTrue(result)
+        
+        # Verify it's gone
+        hist_after = database.get_folder_history()
+        self.assertFalse(any(h['path'] == test_path for h in hist_after))
+    
+    def test_delete_nonexistent_folder_history_item(self):
+        """Test deleting a folder that doesn't exist in history."""
+        from backend import database
+        
+        result = database.delete_folder_history_item('/nonexistent/path/12345')
+        self.assertFalse(result)
+    
+    def test_clear_folder_history(self):
+        """Test clearing all folder history."""
+        from backend import database
+        
+        # Add some folders
+        database.add_folder_to_history('/test/clear1')
+        database.add_folder_to_history('/test/clear2')
+        
+        # Clear all
+        count = database.clear_folder_history()
+        self.assertIsInstance(count, int)
+        
+        # Verify empty
+        hist = database.get_folder_history()
+        self.assertEqual(len(hist), 0)
 
     def test_database_initialization(self):
         """Test that database is properly initialized."""

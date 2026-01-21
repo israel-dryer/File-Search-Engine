@@ -194,6 +194,9 @@ describe('Component', () => {
 | POST | `/api/index` | Start background indexing |
 | GET | `/api/index/status` | Get indexing progress |
 | GET | `/api/files` | List indexed files |
+| GET | `/api/folders/history` | Get folder history |
+| DELETE | `/api/folders/history` | Clear all folder history |
+| DELETE | `/api/folders/history/item` | Delete single folder from history |
 | POST | `/api/validate-path` | Validate folder path |
 | POST | `/api/open-file` | Open file in system app |
 | GET | `/api/models/available` | Downloadable models |
@@ -313,6 +316,12 @@ When working on file processing tasks, consult the relevant skill documentation:
   - Implemented auto-save when adding/removing folders
   - Added `folder_history` table to `metadata.db` with migration from existing files
   - `backend/database.py`, `backend/api.py`, `frontend/src/components/SettingsModal.jsx`
+- **Fixed test data leaking into folder history** - Test isolation fix
+  - Added `delete_folder_history_item()` and `clear_folder_history()` to `database.py`
+  - Added DELETE endpoints `/api/folders/history` and `/api/folders/history/item`
+  - Updated `test_database.py` to use module-level database setup for proper isolation
+  - Added "Clear All" button and individual delete buttons to folder history dropdown in Settings UI
+  - Files: `backend/database.py`, `backend/api.py`, `backend/tests/test_database.py`, `frontend/src/components/SettingsModal.jsx`
 
 ### 2026-01-09
 - **Enhanced LLM output quality** - AI now references filenames and quotes specific content

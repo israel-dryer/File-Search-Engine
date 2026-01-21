@@ -137,6 +137,30 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
         await saveConfigData(newConfig);
     };
 
+    const handleRemoveFromHistory = async (folder, e) => {
+        e.stopPropagation();  // Prevent adding the folder when clicking delete
+        try {
+            await axios.delete('http://localhost:8000/api/folders/history/item', {
+                data: { path: folder }
+            });
+            fetchFolderHistory();  // Refresh the list
+        } catch (error) {
+            console.error('Failed to remove folder from history:', error);
+        }
+    };
+
+    const handleClearAllHistory = async () => {
+        if (confirm('Clear all folder history?')) {
+            try {
+                await axios.delete('http://localhost:8000/api/folders/history');
+                setFolderHistory([]);
+                setShowHistory(false);
+            } catch (error) {
+                console.error('Failed to clear folder history:', error);
+            }
+        }
+    };
+
     const handleIndex = async () => {
         await handleSave();
         try {
@@ -241,24 +265,42 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                                     </button>
 
                                     {showHistory && (
-                                        <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden">
-                                            <div className="p-2 border-b border-border bg-muted/30">
+                                        <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden">
+                                            <div className="p-2 border-b border-border bg-muted/30 flex justify-between items-center">
                                                 <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Recent Folders</h4>
+                                                <button
+                                                    onClick={handleClearAllHistory}
+                                                    className="text-[10px] text-destructive hover:text-destructive/80 font-medium"
+                                                    title="Clear all folder history"
+                                                >
+                                                    Clear All
+                                                </button>
                                             </div>
                                             <div className="max-h-48 overflow-y-auto py-1">
                                                 {folderHistory.filter(f => !config.folders.includes(f)).length > 0 ? (
                                                     folderHistory
                                                         .filter(f => !config.folders.includes(f))
                                                         .map((folder, idx) => (
-                                                            <button
+                                                            <div
                                                                 key={idx}
-                                                                onClick={() => handleAddFromHistory(folder)}
-                                                                className="w-full text-left px-3 py-2 text-xs hover:bg-accent hover:text-accent-foreground truncate transition-colors flex items-center gap-2"
-                                                                title={folder}
+                                                                className="flex items-center gap-1 px-2 py-1.5 hover:bg-accent group"
                                                             >
-                                                                <FolderOpen className="w-3 h-3 opacity-50" />
-                                                                <span className="truncate">{folder}</span>
-                                                            </button>
+                                                                <button
+                                                                    onClick={() => handleAddFromHistory(folder)}
+                                                                    className="flex-1 text-left text-xs truncate flex items-center gap-2"
+                                                                    title={`Add: ${folder}`}
+                                                                >
+                                                                    <FolderOpen className="w-3 h-3 opacity-50 flex-shrink-0" />
+                                                                    <span className="truncate">{folder}</span>
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => handleRemoveFromHistory(folder, e)}
+                                                                    className="p-1 rounded hover:bg-destructive/20 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                    title="Remove from history"
+                                                                >
+                                                                    <Trash2 className="w-3 h-3" />
+                                                                </button>
+                                                            </div>
                                                         ))
                                                 ) : (
                                                     <div className="px-3 py-4 text-center text-xs text-muted-foreground italic">

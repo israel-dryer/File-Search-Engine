@@ -22,17 +22,7 @@ const SearchBar = ({ onSearch, isLoading, isAgentMode, onToggleAgent }) => {
                         }`}
                 >
                     <div className="pl-5 flex items-center text-primary/60">
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                        ) : (
-                        <button
-                            type="button"
-                            onClick={onToggleAgent}
-                            className={`transition-all duration-300 hover:scale-110 ${isAgentMode ? 'text-blue-500' : 'text-primary/60'}`}
-                            title={isAgentMode ? "Switch to Standard Search" : "Switch to AI Agent Mode"}
-                        >
-                            {isAgentMode ? <Brain className="w-7 h-7" /> : <Search className="w-6 h-6" />}
-                        </button>
-                        )}
+                        {isLoading && <Loader2 className="w-6 h-6 animate-spin" />}
                     </div>
                     <input
                         type="text"

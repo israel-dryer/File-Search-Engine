@@ -366,6 +366,22 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                         >
                             {indexingStatus.running ? 'Indexing...' : 'Rebuild Index'}
                         </button>
+
+                        {/* Indexing Progress Bar */}
+                        {indexingStatus.running && (
+                            <div className="mt-3 space-y-1.5 animate-in fade-in duration-300">
+                                <div className="flex justify-between text-xs font-medium text-muted-foreground">
+                                    <span>Processing: {indexingStatus.current_file ? indexingStatus.current_file.split('/').pop() : 'Initializing...'}</span>
+                                    <span>{indexingStatus.progress}%</span>
+                                </div>
+                                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-primary transition-all duration-300 ease-out"
+                                        style={{ width: `${indexingStatus.progress}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </section>
 
                     {/* AI Provider Selection */}

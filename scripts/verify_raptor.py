@@ -55,7 +55,8 @@ def test_raptor_pipeline():
         # We need a provider that works.
         # Let's try 'local' (HuggingFace) for embeddings.
         
-        index, docs, tags, idx_sum, doc_sum, map_sum = create_index(
+        
+        index, docs, tags, idx_sum, doc_sum, map_sum, bm25 = create_index(
             test_dir, 
             provider='local', # Forces HF Embeddings
             api_key='test',
@@ -66,6 +67,7 @@ def test_raptor_pipeline():
         print(f"- Chunks: {len(docs)}")
         print(f"- Clusters: {len(doc_sum)}")
         print(f"- Map Entries: {len(map_sum)}")
+        print(f"- BM25 Index: {'Built' if bm25 else 'Failed'}")
         
         if len(doc_sum) > 0:
             print(f"- Cluster 0 Summary: {doc_sum[0]}")
@@ -73,10 +75,10 @@ def test_raptor_pipeline():
         # Test Search
         print("\n[3] Searching 'Red Planet'...")
         embeddings = get_embeddings('local')
-        results = search(
+        results, ctx = search(
             "Red Planet", 
             index, docs, tags, embeddings, 
-            idx_sum, doc_sum, map_sum
+            idx_sum, doc_sum, map_sum, bm25
         )
         
         print(f"Found {len(results)} results.")

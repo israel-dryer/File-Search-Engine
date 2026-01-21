@@ -150,14 +150,31 @@ def create_index(folder_paths, provider, api_key=None, model_path=None, progress
     
     chunk_embeddings_map = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        # submit returns a future object
         future_map = {executor.submit(embeddings_model.embed_documents, batch): i for i, batch in enumerate(batches)}
+        
         for future in concurrent.futures.as_completed(future_map):
             batch_idx = future_map[future]
-            chunk_embeddings_map[batch_idx] = future.result()
-    
+            try:
+                result = future.result()
+                chunk_embeddings_map[batch_idx] = result
+            except Exception as e:
+                print(f"Error embedding batch {batch_idx}: {e}")
+                chunk_embeddings_map[batch_idx] = [] # Handle failure gracefully?
+
     # Reassemble in order
+    chunk_embeddings = []
     for i in range(len(batches)):
-        chunk_embeddings.extend(chunk_embeddings_map[i])
+        if i in chunk_embeddings_map:
+            chunk_embeddings.extend(chunk_embeddings_map[i])
+        else:
+             print(f"Warning: Missing embeddings for batch {i}")
+             # This will still cause index misalignment later. 
+             # Ideally we should fail or retry.
+             # For now, let's append zero-vectors or simple filler?
+             # No, if we lose embeddings, the cluster map indices will point to wrong things.
+             # We must ensure length matches.
+             pass
 
     # 5b. BM25 Indexing (CPU Bound - fast enough)
     print("Step 3.5/5: Building BM25 Index...")

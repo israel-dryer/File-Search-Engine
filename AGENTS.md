@@ -336,6 +336,13 @@ When working on file processing tasks, consult the relevant skill documentation:
 - **Created AGENTS.md** - Workspace instructions
 
 ### 2026-01-21
+- **Implemented Persistent AI Response Cache** - SQLite-backed caching for instant repeated queries
+  - **Database**: Added `response_cache` table to `metadata.db` with query/context hashing
+  - **Logic**: Implemented `compute_cache_key`, `cached_smart_summary`, `cached_generate_ai_answer`
+  - **Performance**: Added model warmup on startup to eliminate first-query delay
+  - **Endpoints**: Added `/api/cache/stats` and `/api/cache/clear`
+  - Files: `backend/database.py`, `backend/llm_integration.py`, `backend/api.py`
+  - Tests: `backend/tests/test_cache.py` (New)
 - **Folder Restructure Complete** - Backend files moved to `backend/`, scripts to `scripts/`, data to `data/`
 - **Updated Imports** - All modules now use absolute `backend.` imports
 - **Fixed File Locks** - Database initialization moved to startup event to prevent lock issues during tests

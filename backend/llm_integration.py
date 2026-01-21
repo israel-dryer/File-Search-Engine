@@ -8,6 +8,8 @@ except ImportError:
     Llama = None
 import re
 import os
+import hashlib
+from backend import database
 
 # Cache for loaded models
 _embeddings_cache = {}
@@ -80,6 +82,12 @@ def get_local_llm(model_path):
     except Exception as e:
         print(f"Failed to load Local LLM: {e}")
         return None
+
+def warmup_local_model(model_path):
+    """Pre-load the local model into memory on startup."""
+    if model_path:
+        get_local_llm(model_path)
+
 
 def get_llm_client(provider, api_key=None, model_path=None):
     """
@@ -192,6 +200,76 @@ Answer (cite specific details from the documents):"""
     except Exception as e:
         print(f"Generation error ({provider}): {e}")
         return f"Error generating answer: {str(e)}"
+
+# -----------------------------------------------------------------------------
+# Caching Wrappers
+# -----------------------------------------------------------------------------
+
+def compute_cache_key(query: str, context: str, model_id: str) -> tuple:
+    """Returns SHA256 hashes for query and context."""
+    query_hash = hashlib.sha256(query.strip().lower().encode('utf-8')).hexdigest()
+    # Normalize context by removing whitespace to ignore formatting changes
+    context_norm = re.sub(r'\s+', ' ', context.strip())
+    context_hash = hashlib.sha256(context_norm.encode('utf-8')).hexdigest()
+    return query_hash, context_hash
+
+def cached_generate_ai_answer(context, question, provider, api_key=None, model_path=None):
+    """
+    Wrapper around generate_ai_answer that checks persistent cache first.
+    """
+    # specific model ID for cache key
+    if provider == 'local':
+        model_id = f"local:{os.path.basename(model_path)}" if model_path else "local:unknown"
+    else:
+        model_id = provider
+
+    query_hash, context_hash = compute_cache_key(question, context, model_id)
+    
+    # 1. Check Cache
+    cached_text = database.get_cached_response(query_hash, context_hash, model_id, "ai_answer")
+    if cached_text:
+        return cached_text
+        
+    # 2. Generate Trace (Cache Miss)
+    answer = generate_ai_answer(context, question, provider, api_key, model_path)
+    
+    # 3. Store in Cache (if valid response)
+    if answer and not answer.startswith("Error"):
+        database.cache_response(query_hash, context_hash, model_id, "ai_answer", answer)
+        
+    return answer
+
+def cached_smart_summary(text, query, provider, api_key=None, model_path=None, file_name=None):
+    """
+    Wrapper around smart_summary that checks persistent cache first.
+    """
+    if not text:
+        return ""
+
+    if provider == 'local':
+        model_id = f"local:{os.path.basename(model_path)}" if model_path else "local:unknown"
+    else:
+        model_id = provider
+
+    # Truncate text for cache key matching (must match logic in smart_summary)
+    truncated_text = text[:3000]
+    query_hash, context_hash = compute_cache_key(query, truncated_text, model_id)
+
+    # 1. Check Cache
+    cached_text = database.get_cached_response(query_hash, context_hash, model_id, "smart_summary")
+    if cached_text:
+        return cached_text
+
+    # 2. Generate
+    summary = smart_summary(text, query, provider, api_key, model_path, file_name)
+
+    # 3. Store
+    # Logic to avoid caching fallbacks (regex summary usually just returns sentences)
+    # We only cache if it looks like a genuine model output or a high quality extraction
+    if summary and len(summary) > 10: 
+        database.cache_response(query_hash, context_hash, model_id, "smart_summary", summary)
+        
+    return summary
 
 def smart_summary(text, query, provider, api_key=None, model_path=None, file_name=None):
     """

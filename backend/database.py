@@ -64,6 +64,25 @@ def init_database():
             last_used_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # Response Cache table (Persistent AI Answers)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS response_cache (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            query_hash TEXT NOT NULL,
+            context_hash TEXT NOT NULL,
+            model_id TEXT NOT NULL,
+            response_type TEXT NOT NULL,
+            response_text TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            hit_count INTEGER DEFAULT 0,
+            last_accessed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(query_hash, context_hash, model_id, response_type)
+        )
+    """)
+    
+    # Index for fast cache lookups
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_cache_lookup ON response_cache(query_hash, model_id)")
     
     # Populate history from existing files if empty
     cursor.execute("SELECT COUNT(*) FROM folder_history")
@@ -300,4 +319,89 @@ def clear_folder_history() -> int:
 
 # Database initialization moved to api.py startup_event
 # to prevent side effects on import (file locking)
+
+# -----------------------------------------------------------------------------
+# Response Cache Functions
+# -----------------------------------------------------------------------------
+
+def get_cached_response(query_hash: str, context_hash: str, model_id: str, response_type: str) -> Optional[str]:
+    """
+    Retrieve a cached response if it exists.
+    Updates hit_count and last_accessed_at on hit.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT response_text, hit_count FROM response_cache 
+            WHERE query_hash = ? AND context_hash = ? AND model_id = ? AND response_type = ?
+        """, (query_hash, context_hash, model_id, response_type))
+        
+        result = cursor.fetchone()
+        if result:
+            response_text, hit_count = result
+            # Update stats asynchronously-ish (fire and forget update)
+            cursor.execute("""
+                UPDATE response_cache 
+                SET hit_count = hit_count + 1, last_accessed_at = CURRENT_TIMESTAMP 
+                WHERE query_hash = ? AND context_hash = ? AND model_id = ? AND response_type = ?
+            """, (query_hash, context_hash, model_id, response_type))
+            conn.commit()
+            return response_text
+        return None
+    except Exception as e:
+        print(f"Cache lookup failed: {e}")
+        return None
+    finally:
+        conn.close()
+
+def cache_response(query_hash: str, context_hash: str, model_id: str, response_type: str, response_text: str):
+    """
+    Store a new response in the persistent cache.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT OR REPLACE INTO response_cache 
+            (query_hash, context_hash, model_id, response_type, response_text, hit_count, last_accessed_at)
+            VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+        """, (query_hash, context_hash, model_id, response_type, response_text))
+        conn.commit()
+    except Exception as e:
+        print(f"Cache storage failed: {e}")
+    finally:
+        conn.close()
+
+def clear_response_cache():
+    """Clear all cached AI responses."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM response_cache")
+        count = cursor.rowcount
+        conn.commit()
+        return count
+    except Exception as e:
+        print(f"Cache clear failed: {e}")
+        return 0
+    finally:
+        conn.close()
+
+def get_cache_stats():
+    """Get statistics about the response cache."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT COUNT(*), SUM(hit_count) FROM response_cache")
+        total_entries, total_hits = cursor.fetchone()
+        return {
+            "total_entries": total_entries or 0,
+            "total_hits": total_hits or 0
+        }
+    except Exception as e:
+        print(f"Cache stats failed: {e}")
+        return {"total_entries": 0, "total_hits": 0}
+    finally:
+        conn.close()
 

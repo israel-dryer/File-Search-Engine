@@ -59,6 +59,17 @@ def save_config_file(config):
 @app.on_event("startup")
 async def startup_event():
     database.init_database()
+    
+    # Warmup local model if configured
+    config = load_config()
+    if config.get('LocalLLM', 'provider') == 'local':
+        model_path = config.get('LocalLLM', 'model_path')
+        if model_path and os.path.exists(model_path):
+            print(f"Warming up local model: {model_path}...")
+            # Run in background to not block startup
+            # But here we want it ready, so we might just trigger the load
+            from backend.llm_integration import warmup_local_model
+            warmup_local_model(model_path)
     global index, docs, tags
     if os.path.exists(INDEX_PATH):
         try:
@@ -306,19 +317,7 @@ async def search_files(request: SearchRequest):
             api_key = config.get('APIKeys', 'anthropic_api_key', fallback=None)
         elif provider == 'grok':
             api_key = config.get('APIKeys', 'grok_api_key', fallback=None)
-
-        model_path = config.get('LocalLLM', 'model_path', fallback=None)
-        
-        embeddings_model = get_embeddings(provider, api_key, model_path)
-        
-        # Search
-        results = search(request.query, index, docs, tags, embeddings_model)
-        
-        # Process results with summaries and file info
-        processed_results = []
-        context_snippets = []
-        
-        from backend.llm_integration import smart_summary
+        from backend.llm_integration import cached_smart_summary, cached_generate_ai_answer, summarize
 
         for idx, result in enumerate(results):
             # Get file info FIRST so we can pass it to smart_summary
@@ -327,9 +326,9 @@ async def search_files(request: SearchRequest):
             file_name = file_info['filename'] if file_info else None
             file_path = file_info['path'] if file_info else None
             
-            # For top 3 results, use Smart Summary (LLM) if configured
+            # For top 3 results, use CACHED Smart Summary (LLM) if configured
             if idx < 3:
-                summary = smart_summary(result['document'], request.query, provider, api_key, model_path, file_name=file_name)
+                summary = cached_smart_summary(result['document'], request.query, provider, api_key, model_path, file_name=file_name)
             else:
                 # Fallback to fast summary for others to save time
                 summary = summarize(result['document'], provider, api_key, model_path, question=request.query)
@@ -367,8 +366,8 @@ async def search_files(request: SearchRequest):
         context_text = "\n\n".join(context_snippets[:4]) # Top 4 results
         if context_text:
             print(f"Generating answer with {active_model_name}...")
-            # We now pass provider and api_key to generate_ai_answer
-            ai_answer = generate_ai_answer(context_text, request.query, provider, api_key, model_path)
+            # We now pass provider and api_key to CACHED generate_ai_answer
+            ai_answer = cached_generate_ai_answer(context_text, request.query, provider, api_key, model_path)
         
         # Save to search history
         execution_time_ms = int((time.time() - start_time) * 1000)

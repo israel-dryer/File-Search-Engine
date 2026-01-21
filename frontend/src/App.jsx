@@ -4,11 +4,9 @@ import SearchBar from './components/SearchBar';
 import SearchResults from './components/SearchResults';
 import SearchHistory from './components/SearchHistory';
 import SettingsModal from './components/SettingsModal';
-import AbstractBackground from './components/AbstractBackground';
-import AnimatedText from './components/AnimatedText';
 import AgentChat from './components/AgentChat';
 import axios from 'axios';
-import { History, Sparkles } from 'lucide-react';
+import { History } from 'lucide-react';
 
 function App() {
     const [darkMode, setDarkMode] = useState(true);
@@ -58,7 +56,7 @@ function App() {
             setDarkMode(true);
         }
         checkConfig();
-        fetchModels(); // [NEW]
+        fetchModels();
     }, []);
 
     const fetchModels = async () => {
@@ -88,14 +86,11 @@ function App() {
     };
 
     const handleModelChange = async (modelName) => {
-        // Find the full path from availableModels
         const selectedModel = availableModels.find(m => m.name.replace('.gguf', '') === modelName || m.name === modelName);
         const modelPath = selectedModel ? selectedModel.path : "";
 
         try {
-            // Get current config to preserve other settings
             const currentConfig = await axios.get('http://localhost:8000/api/config');
-
             await axios.post('http://localhost:8000/api/config', {
                 folders: currentConfig.data.folders || [],
                 auto_index: currentConfig.data.auto_index,
@@ -104,7 +99,6 @@ function App() {
                 local_model_path: modelPath
             });
             setActiveModel(modelName);
-            console.log(`Switched to model: ${modelName} (${modelPath})`);
         } catch (error) {
             console.error("Failed to switch model", error);
         }
@@ -130,8 +124,8 @@ function App() {
         }
 
         setIsLoading(true);
-        setAiAnswer(""); // Reset previous answer
-        setSearchResults([]); // Clear previous results
+        setAiAnswer("");
+        setSearchResults([]);
         try {
             const response = await axios.post('http://localhost:8000/api/search', { query });
             setSearchResults(response.data.results || response.data);
@@ -139,7 +133,6 @@ function App() {
                 setAiAnswer(response.data.ai_answer);
             }
             if (response.data.active_model) {
-                // Clean up model name if it contains .gguf
                 const modelName = response.data.active_model.replace('.gguf', '');
                 setActiveModel(modelName);
             }
@@ -151,38 +144,18 @@ function App() {
     };
 
     return (
-        <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 transition-colors duration-500 relative">
-            {/* CSS-Only Background Layer */}
-            {/* CSS-Only Background Layer */}
-            <div className="fixed inset-0 z-[-2] bg-neural dark:opacity-20 transition-opacity duration-1000" />
-            <div className="fixed inset-0 z-[-2] bg-picasso opacity-30" />
-            <div className="fixed inset-0 z-[-1] bg-grid-pattern opacity-50" />
-            <AbstractBackground />
-
-            {/* 3D Floating Elements */}
-            <div className="fixed inset-0 overflow-hidden -z-10 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] animate-float" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] animate-float" style={{ animationDelay: '-2s' }} />
-            </div>
-
+        <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
             <Header
                 darkMode={darkMode}
                 toggleDarkMode={() => setDarkMode(!darkMode)}
                 openSettings={() => setIsSettingsOpen(true)}
+                toggleHistory={() => setIsHistoryOpen(!isHistoryOpen)}
+                isHistoryOpen={isHistoryOpen}
                 activeModel={activeModel}
                 availableModels={availableModels}
                 onModelChange={handleModelChange}
                 indexingStatus={indexingStatus}
             />
-
-            {/* 3D Floating History Button - Responsive adaptation */}
-            <button
-                onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-                className={`fixed left-4 ${hasSearched ? 'top-20' : 'bottom-10'} z-20 p-3 rounded-2xl glass-v2 transition-all duration-300 transform border border-white/20 hover:scale-110 active:scale-95 shadow-2xl ${isHistoryOpen ? 'rotate-12 translate-x-1' : ''}`}
-                title="Search History"
-            >
-                <History className="w-5 h-5 text-primary" />
-            </button>
 
             <SearchHistory
                 isOpen={isHistoryOpen}
@@ -191,29 +164,19 @@ function App() {
                 isMobile={isMobile}
             />
 
-            <main className={`container mx-auto pb-16 min-h-[calc(100vh-3.5rem)] flex flex-col transition-all duration-500 ease-in-out ${isHistoryOpen && !isMobile ? 'pl-72' : ''}`}>
-                <div className={`flex-1 flex flex-col items-center w-full max-w-5xl mx-auto px-4 ${hasSearched ? 'pt-8' : 'justify-center'}`}>
+            <main className={`container mx-auto pb-16 min-h-[calc(100vh-3.5rem)] flex flex-col transition-all duration-300 ease-in-out ${isHistoryOpen && !isMobile ? 'pl-72' : ''}`}>
+                <div className={`flex-1 flex flex-col items-center w-full max-w-3xl mx-auto px-4 ${hasSearched ? 'pt-8' : 'justify-center'}`}>
 
-                    {/* 3D Hero Section */}
                     {!hasSearched && (
-                        <div className="text-center space-y-8 animate-slide-up mb-12">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl glass-v2 mb-4 animate-float">
-                                <Sparkles className="w-4 h-4 text-primary" />
-                                <span className="text-sm font-semibold tracking-wide uppercase">Hyper-Search Engine</span>
-                            </div>
-
-                            <AnimatedText
-                                text="EXPLORE YOUR DATA"
-                                className="text-3d text-5xl md:text-7xl lg:text-8xl tracking-tighter leading-[0.9] py-4 bg-clip-text"
-                            />
-
-                            <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto font-medium opacity-80">
-                                Navigate your local filesystem with 3D physical search technology and AI intelligence.
+                        <div className="text-center space-y-4 mb-12">
+                            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">File Search</h1>
+                            <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto">
+                                Your universal file search engine.
                             </p>
                         </div>
                     )}
 
-                    <div className={`w-full transition-all duration-500 ${hasSearched ? '' : 'animate-float'}`} style={{ animationDelay: '0.5s' }}>
+                    <div className="w-full">
                         <SearchBar
                             onSearch={handleSearch}
                             isLoading={isLoading}

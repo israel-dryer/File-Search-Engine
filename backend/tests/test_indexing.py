@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pickle
 from unittest.mock import patch, MagicMock
-from indexing import create_index, save_index, load_index
+from backend.indexing import create_index, save_index, load_index
 
 
 class TestIndexing(unittest.TestCase):
@@ -21,8 +21,8 @@ class TestIndexing(unittest.TestCase):
         with open(self.test_file, 'w') as f:
             f.write("This is test content for indexing.")
     
-    @patch('indexing.get_embeddings')
-    @patch('indexing.extract_text')
+    @patch('backend.indexing.get_embeddings')
+    @patch('backend.indexing.extract_text')
     def test_create_index(self, mock_extract_text, mock_get_embeddings):
         """Test creating an index."""
         # Mock the extract_text function to return test content
@@ -44,8 +44,8 @@ class TestIndexing(unittest.TestCase):
             self.assertEqual(len(docs), 1)
             self.assertIn(["test", "indexing"], tags)
     
-    @patch('indexing.get_embeddings')
-    @patch('indexing.extract_text')
+    @patch('backend.indexing.get_embeddings')
+    @patch('backend.indexing.extract_text')
     def test_create_index_empty_folder(self, mock_extract_text, mock_get_embeddings):
         """Test creating an index with empty folder."""
         empty_folder = os.path.join(self.temp_dir, "empty_folder")
@@ -143,8 +143,8 @@ class TestIndexingMultipleFolders(unittest.TestCase):
         with open(os.path.join(self.folder2, "doc2.txt"), 'w') as f:
             f.write("Content from folder 2")
 
-    @patch('indexing.get_embeddings')
-    @patch('indexing.extract_text')
+    @patch('backend.indexing.get_embeddings')
+    @patch('backend.indexing.extract_text')
     def test_create_index_multiple_folders(self, mock_extract_text, mock_get_embeddings):
         """Test creating index from multiple folders."""
         mock_extract_text.return_value = "Test content"
@@ -163,8 +163,8 @@ class TestIndexingMultipleFolders(unittest.TestCase):
             self.assertIsNotNone(index)
             self.assertEqual(len(docs), 2)
 
-    @patch('indexing.get_embeddings')
-    @patch('indexing.extract_text')
+    @patch('backend.indexing.get_embeddings')
+    @patch('backend.indexing.extract_text')
     def test_create_index_with_progress_callback(self, mock_extract_text, mock_get_embeddings):
         """Test progress callback during indexing."""
         mock_extract_text.return_value = "Test content"
@@ -197,8 +197,8 @@ class TestIndexingMultipleFolders(unittest.TestCase):
             
             self.assertIsNone(index)
 
-    @patch('indexing.get_embeddings')
-    @patch('indexing.extract_text')
+    @patch('backend.indexing.get_embeddings')
+    @patch('backend.indexing.extract_text')
     def test_create_index_string_folder_path(self, mock_extract_text, mock_get_embeddings):
         """Test that string folder path is converted to list."""
         mock_extract_text.return_value = "Test content"

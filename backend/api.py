@@ -58,6 +58,7 @@ def save_config_file(config):
 # Initialize index on startup if available
 @app.on_event("startup")
 async def startup_event():
+    database.init_database()
     global index, docs, tags
     if os.path.exists(INDEX_PATH):
         try:
@@ -271,6 +272,15 @@ async def update_config(config_data: ConfigModel):
     }
     config['LocalLLM'] = {'model_path': config_data.local_model_path or '', 'provider': config_data.provider}
     save_config_file(config)
+    
+    # Save folders to history
+    try:
+        if config_data.folders:
+            for folder in config_data.folders:
+                database.add_folder_to_history(folder)
+    except Exception as e:
+        print(f"Failed to update folder history: {e}")
+        
     return {"status": "success", "message": "Configuration saved"}
 
 @app.post("/api/search", response_model=SearchResponse)
@@ -433,6 +443,41 @@ async def list_indexed_files():
     try:
         files = database.get_all_files()
         return files
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/folders/history")
+async def get_folder_history():
+    """Get previously used folders."""
+    try:
+        history = database.get_folder_history()
+        return [item['path'] for item in history]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/folders/history")
+async def clear_folder_history():
+    """Clear all folder history."""
+    try:
+        count = database.clear_folder_history()
+        return {"status": "success", "message": f"Cleared {count} folder history items", "deleted_count": count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/folders/history/item")
+async def delete_folder_history_item(request: dict):
+    """Delete a single folder from history."""
+    path = request.get('path', '')
+    if not path:
+        raise HTTPException(status_code=400, detail="Path is required")
+    
+    try:
+        success = database.delete_folder_history_item(path)
+        if success:
+            return {"status": "success", "message": "Folder removed from history"}
+        raise HTTPException(status_code=404, detail="Folder not found in history")
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

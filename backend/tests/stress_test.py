@@ -178,7 +178,7 @@ class StressTest:
     
     def test_file_detection(self, result):
         """Test file detection in folders"""
-        from file_processing import extract_text
+        from backend.file_processing import extract_text
         
         all_files = []
         for dirpath, _, filenames in os.walk(self.test_folder):
@@ -195,7 +195,7 @@ class StressTest:
             
     def test_text_extraction(self, result):
         """Test text extraction from various file types"""
-        from file_processing import extract_text
+        from backend.file_processing import extract_text
         
         test_cases = [
             ('document1.txt', 'machine learning'),
@@ -237,7 +237,7 @@ class StressTest:
         
     def test_database_operations(self, result):
         """Test SQLite database operations"""
-        import database
+        from backend import database
         
         # Test database initialization
         result.add_detail("Testing database operations...")
@@ -333,7 +333,7 @@ class StressTest:
                 
     def test_model_manager(self, result):
         """Test model manager functionality"""
-        from model_manager import get_available_models, get_local_models, get_download_status
+        from backend.model_manager import get_available_models, get_local_models, get_download_status
         
         # Test available models
         available = get_available_models()
@@ -404,7 +404,7 @@ class StressTest:
         """Test FAISS index save/load functionality"""
         import numpy as np
         import faiss
-        from indexing import save_index, load_index
+        from backend.indexing import save_index, load_index
         
         test_index_path = os.path.join(self.temp_dir, 'test_index.faiss')
         
@@ -469,7 +469,7 @@ class StressTest:
         """Test the search function with a mock index"""
         import numpy as np
         import faiss
-        from search import search
+        from backend.search import search
         
         # Create mock embeddings model
         class MockEmbeddings:
@@ -507,7 +507,7 @@ class StressTest:
             
     def test_edge_cases(self, result):
         """Test edge cases and error handling"""
-        from file_processing import extract_text
+        from backend.file_processing import extract_text
         
         tests_passed = 0
         total_tests = 4
@@ -564,7 +564,7 @@ class StressTest:
         
     def test_concurrent_access(self, result):
         """Test concurrent database access"""
-        import database
+        from backend import database
         import threading
         
         errors = []

@@ -54,7 +54,37 @@ def init_database():
             value TEXT
         )
     """)
+
+    # Folder history table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS folder_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            path TEXT UNIQUE NOT NULL,
+            added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            last_used_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     
+    # Populate history from existing files if empty
+    cursor.execute("SELECT COUNT(*) FROM folder_history")
+    if cursor.fetchone()[0] == 0:
+        try:
+            cursor.execute("SELECT path FROM files")
+            files = cursor.fetchall()
+            seen_folders = set()
+            timestamp = datetime.now()
+            
+            for row in files:
+                folder = os.path.dirname(row['path'])
+                if folder and folder not in seen_folders:
+                    seen_folders.add(folder)
+                    cursor.execute("INSERT OR IGNORE INTO folder_history (path, added_at, last_used_at) VALUES (?, ?, ?)", 
+                                  (folder, timestamp, timestamp))
+            if seen_folders:
+                print(f"Migrated {len(seen_folders)} folders to history.")
+        except Exception as e:
+            print(f"Migration failed: {e}")
+            
     conn.commit()
     conn.close()
 
@@ -211,6 +241,63 @@ def delete_all_search_history() -> int:
     conn.close()
     return count
 
-# Initialize database on import
-init_database()
+def add_folder_to_history(path: str):
+    """Add or update a folder in history."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    timestamp = datetime.now()
+    
+    # Check if exists
+    cursor.execute("SELECT id FROM folder_history WHERE path = ?", (path,))
+    row = cursor.fetchone()
+    
+    if row:
+        cursor.execute("UPDATE folder_history SET last_used_at = ? WHERE id = ?", (timestamp, row['id']))
+    else:
+        cursor.execute("INSERT INTO folder_history (path, added_at, last_used_at) VALUES (?, ?, ?)", 
+                      (path, timestamp, timestamp))
+    
+    conn.commit()
+    conn.close()
+
+def get_folder_history(limit: int = 20) -> List[Dict]:
+    """Get recent folder history."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM folder_history ORDER BY last_used_at DESC LIMIT ?", (limit,))
+    history = [dict(row) for row in cursor.fetchall()]
+    
+    conn.close()
+    return history
+
+def delete_folder_history_item(path: str) -> bool:
+    """Delete a single folder from history. Returns True if deleted."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("DELETE FROM folder_history WHERE path = ?", (path,))
+    deleted = cursor.rowcount > 0
+    
+    conn.commit()
+    conn.close()
+    return deleted
+
+def clear_folder_history() -> int:
+    """Clear all folder history. Returns count of deleted items."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) FROM folder_history")
+    count = cursor.fetchone()[0]
+    
+    cursor.execute("DELETE FROM folder_history")
+    
+    conn.commit()
+    conn.close()
+    return count
+
+# Database initialization moved to api.py startup_event
+# to prevent side effects on import (file locking)
 

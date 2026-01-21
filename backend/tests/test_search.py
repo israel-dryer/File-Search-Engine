@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from unittest.mock import MagicMock
-from search import search
+from backend.search import search
 
 
 class TestSearch(unittest.TestCase):

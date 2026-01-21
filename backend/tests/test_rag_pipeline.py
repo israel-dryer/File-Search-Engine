@@ -1,7 +1,7 @@
 import configparser
 import os
 import sys
-from llm_integration import generate_ai_answer
+from backend.llm_integration import generate_ai_answer
 
 # Read config
 config = configparser.ConfigParser()

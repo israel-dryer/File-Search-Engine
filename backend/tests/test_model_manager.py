@@ -15,7 +15,7 @@ class TestModelManager(unittest.TestCase):
     
     def test_get_available_models(self):
         """Test that available models list is returned."""
-        from model_manager import get_available_models
+        from backend.model_manager import get_available_models
         
         models = get_available_models()
         
@@ -31,7 +31,7 @@ class TestModelManager(unittest.TestCase):
     
     def test_model_metadata_complete(self):
         """Test that all models have required metadata."""
-        from model_manager import get_available_models
+        from backend.model_manager import get_available_models
         
         models = get_available_models()
         required_fields = ['id', 'name', 'description', 'size', 'ram_required', 'category', 'url']
@@ -43,7 +43,7 @@ class TestModelManager(unittest.TestCase):
     
     def test_model_categories(self):
         """Test that models are properly categorized."""
-        from model_manager import get_available_models
+        from backend.model_manager import get_available_models
         
         models = get_available_models()
         valid_categories = ['small', 'medium', 'large']
@@ -58,7 +58,7 @@ class TestModelManager(unittest.TestCase):
     
     def test_get_local_models(self):
         """Test discovering locally downloaded models."""
-        from model_manager import get_local_models
+        from backend.model_manager import get_local_models
         
         local_models = get_local_models()
         
@@ -73,7 +73,7 @@ class TestModelManager(unittest.TestCase):
     
     def test_check_system_resources(self):
         """Test system resource checking function."""
-        from model_manager import check_system_resources
+        from backend.model_manager import check_system_resources
         
         test_model = {
             'id': 'test-model',
@@ -88,7 +88,7 @@ class TestModelManager(unittest.TestCase):
     
     def test_check_system_resources_large_model(self):
         """Test resource check rejects models too large for system."""
-        from model_manager import check_system_resources
+        from backend.model_manager import check_system_resources
         
         # Model requiring 1TB - definitely too large
         test_model = {
@@ -104,7 +104,7 @@ class TestModelManager(unittest.TestCase):
     
     def test_get_download_status(self):
         """Test download status retrieval."""
-        from model_manager import get_download_status
+        from backend.model_manager import get_download_status
         
         status = get_download_status()
         
@@ -112,10 +112,10 @@ class TestModelManager(unittest.TestCase):
         self.assertIn('downloading', status)
         self.assertIn('progress', status)
     
-    @patch('model_manager.requests.get')
+    @patch('backend.model_manager.requests.get')
     def test_download_nonexistent_model(self, mock_get):
         """Test downloading a non-existent model ID fails gracefully."""
-        from model_manager import start_download
+        from backend.model_manager import start_download
         
         success, message = start_download('nonexistent-model-id')
         
@@ -139,7 +139,7 @@ class TestModelManagerIntegration(unittest.TestCase):
     
     def test_local_models_match_files(self):
         """Test that get_local_models returns actual files."""
-        from model_manager import get_local_models
+        from backend.model_manager import get_local_models
         
         local_models = get_local_models()
         
@@ -152,7 +152,7 @@ class TestModelManagerIntegration(unittest.TestCase):
     
     def test_local_model_sizes_accurate(self):
         """Test that reported model sizes match actual file sizes."""
-        from model_manager import get_local_models
+        from backend.model_manager import get_local_models
         
         local_models = get_local_models()
         

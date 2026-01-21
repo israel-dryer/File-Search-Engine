@@ -11,20 +11,58 @@ import tempfile
 import shutil
 
 
+# Shared temp database setup for ALL test classes
+_shared_temp_dir = None
+_original_db_path = None
+
+
+def setUpModule():
+    """Set up shared temp database for all tests in this module."""
+    global _shared_temp_dir, _original_db_path
+    from backend import database
+    
+    # Create shared temp directory
+    _shared_temp_dir = tempfile.mkdtemp()
+    _original_db_path = database.DATABASE_PATH
+    database.DATABASE_PATH = os.path.join(_shared_temp_dir, 'test_metadata.db')
+    database.init_database()
+
+
+def tearDownModule():
+    """Clean up shared temp database."""
+    global _shared_temp_dir, _original_db_path
+    from backend import database
+    
+    # Restore original path and clean up
+    database.DATABASE_PATH = _original_db_path
+    if _shared_temp_dir and os.path.exists(_shared_temp_dir):
+        shutil.rmtree(_shared_temp_dir)
+
+
 class TestDatabase(unittest.TestCase):
     """Tests for database module."""
     
-    @classmethod
-    def setUpClass(cls):
-        """Set up test database."""
-        import database
-        cls.db = database
-        # Initialize database tables
-        cls.db.init_database()
+    # No need for setUpClass/tearDownClass - using module-level setup
     
+    def test_folder_history(self):
+        """Test folder history operations."""
+        from backend import database
+        
+        # Add folder
+        database.add_folder_to_history('/test/hist1')
+        
+        # Get history
+        hist = database.get_folder_history()
+        self.assertTrue(any(h['path'] == '/test/hist1' for h in hist))
+        
+        # Add another
+        database.add_folder_to_history('/test/hist2')
+        hist2 = database.get_folder_history()
+        self.assertEqual(hist2[0]['path'], '/test/hist2')
+
     def test_database_initialization(self):
         """Test that database is properly initialized."""
-        import database
+        from backend import database
         
         # Should not raise
         database.init_database()
@@ -37,7 +75,7 @@ class TestDatabase(unittest.TestCase):
     
     def test_add_file_metadata(self):
         """Test adding file metadata to database."""
-        import database
+        from backend import database
         from datetime import datetime
         
         # Should not raise
@@ -57,7 +95,7 @@ class TestDatabase(unittest.TestCase):
     
     def test_get_file_by_faiss_index(self):
         """Test retrieving file by FAISS index."""
-        import database
+        from backend import database
         from datetime import datetime
         
         # First add a file
@@ -82,7 +120,7 @@ class TestDatabase(unittest.TestCase):
     
     def test_add_search_history(self):
         """Test adding search history entries."""
-        import database
+        from backend import database
         
         # Should not raise - using correct parameter names
         try:
@@ -96,7 +134,7 @@ class TestDatabase(unittest.TestCase):
     
     def test_get_search_history(self):
         """Test retrieving search history."""
-        import database
+        from backend import database
         
         # Add a search entry
         database.add_search_history("history test query", 3, 50)
@@ -107,14 +145,14 @@ class TestDatabase(unittest.TestCase):
     
     def test_get_all_files(self):
         """Test getting all indexed files."""
-        import database
+        from backend import database
         
         files = database.get_all_files()
         self.assertIsInstance(files, list)
     
     def test_clear_files(self):
         """Test clearing all file entries."""
-        import database
+        from backend import database
         
         # Should not raise
         try:
@@ -128,7 +166,7 @@ class TestDatabaseSearchHistory(unittest.TestCase):
     
     def test_history_structure(self):
         """Test that search history entries have correct structure."""
-        import database
+        from backend import database
         
         # Add an entry
         database.add_search_history("structure test", 2, 30)
@@ -143,7 +181,7 @@ class TestDatabaseSearchHistory(unittest.TestCase):
     
     def test_delete_search_history(self):
         """Test deleting search history."""
-        import database
+        from backend import database
         
         if hasattr(database, 'delete_all_search_history'):
             deleted_count = database.delete_all_search_history()
@@ -151,7 +189,7 @@ class TestDatabaseSearchHistory(unittest.TestCase):
     
     def test_delete_single_history_item(self):
         """Test deleting a single search history item."""
-        import database
+        from backend import database
         
         # Add a search entry
         database.add_search_history("delete single test", 1, 10)
@@ -165,7 +203,7 @@ class TestDatabaseSearchHistory(unittest.TestCase):
     
     def test_delete_nonexistent_history_item(self):
         """Test deleting a history item that doesn't exist."""
-        import database
+        from backend import database
         
         # Try to delete a non-existent ID
         result = database.delete_search_history_item(999999)
@@ -175,15 +213,11 @@ class TestDatabaseSearchHistory(unittest.TestCase):
 class TestDatabaseFileOperations(unittest.TestCase):
     """Tests for file CRUD operations."""
     
-    @classmethod
-    def setUpClass(cls):
-        """Set up test database."""
-        import database
-        database.init_database()
+    # Using module-level database setup
     
     def test_get_file_by_path_existing(self):
         """Test retrieving a file by path that exists."""
-        import database
+        from backend import database
         from datetime import datetime
         
         test_path = '/test/get_by_path/existing.pdf'
@@ -207,14 +241,14 @@ class TestDatabaseFileOperations(unittest.TestCase):
     
     def test_get_file_by_path_nonexistent(self):
         """Test retrieving a file by path that doesn't exist."""
-        import database
+        from backend import database
         
         file_info = database.get_file_by_path('/nonexistent/path/file.txt')
         self.assertIsNone(file_info)
     
     def test_delete_file(self):
         """Test deleting a file from the database."""
-        import database
+        from backend import database
         from datetime import datetime
         
         test_path = '/test/delete/todelete.pdf'
@@ -242,7 +276,7 @@ class TestDatabaseFileOperations(unittest.TestCase):
     
     def test_get_file_by_faiss_index_not_found(self):
         """Test retrieving file by FAISS index that doesn't exist."""
-        import database
+        from backend import database
         
         file_info = database.get_file_by_faiss_index(888888)
         self.assertIsNone(file_info)
@@ -251,15 +285,11 @@ class TestDatabaseFileOperations(unittest.TestCase):
 class TestDatabasePreferences(unittest.TestCase):
     """Tests for preferences storage."""
     
-    @classmethod
-    def setUpClass(cls):
-        """Set up test database."""
-        import database
-        database.init_database()
+    # Using module-level database setup
     
     def test_set_and_get_preference(self):
         """Test setting and getting a preference."""
-        import database
+        from backend import database
         
         database.set_preference('test_key', 'test_value')
         value = database.get_preference('test_key')
@@ -268,14 +298,14 @@ class TestDatabasePreferences(unittest.TestCase):
     
     def test_get_nonexistent_preference(self):
         """Test getting a preference that doesn't exist."""
-        import database
+        from backend import database
         
         value = database.get_preference('nonexistent_key_12345')
         self.assertIsNone(value)
     
     def test_update_preference(self):
         """Test updating an existing preference."""
-        import database
+        from backend import database
         
         database.set_preference('update_key', 'original_value')
         database.set_preference('update_key', 'updated_value')
@@ -285,7 +315,7 @@ class TestDatabasePreferences(unittest.TestCase):
     
     def test_preference_with_special_characters(self):
         """Test preferences with special characters."""
-        import database
+        from backend import database
         
         special_value = "path/with/slashes and spaces & symbols!"
         database.set_preference('special_key', special_value)
@@ -299,7 +329,7 @@ class TestDatabaseConnection(unittest.TestCase):
     
     def test_get_connection_returns_valid_connection(self):
         """Test that get_connection returns a valid SQLite connection."""
-        import database
+        from backend import database
         
         conn = database.get_connection()
         self.assertIsNotNone(conn)
@@ -314,7 +344,7 @@ class TestDatabaseConnection(unittest.TestCase):
     
     def test_multiple_connections(self):
         """Test that multiple connections work correctly."""
-        import database
+        from backend import database
         
         conn1 = database.get_connection()
         conn2 = database.get_connection()

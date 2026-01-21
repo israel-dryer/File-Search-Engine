@@ -26,6 +26,8 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
         processed_files: 0
     });
     const [expandedSection, setExpandedSection] = useState(null);
+    const [folderHistory, setFolderHistory] = useState([]);
+    const [showHistory, setShowHistory] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -40,6 +42,12 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
             interval = setInterval(fetchIndexingStatus, 1500);
         }
         return () => clearInterval(interval);
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchFolderHistory();
+        }
     }, [isOpen]);
 
     const fetchConfig = async () => {
@@ -60,6 +68,15 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
         }
     };
 
+    const fetchFolderHistory = async () => {
+        try {
+            const response = await axios.get('http://localhost:8000/api/folders/history');
+            setFolderHistory(response.data || []);
+        } catch (error) {
+            console.error('Failed to fetch folder history:', error);
+        }
+    };
+
     const handleSave = async () => {
         setIsLoading(true);
         try {
@@ -73,25 +90,51 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
         }
     };
 
+    const saveConfigData = async (newConfig) => {
+        try {
+            await axios.post('http://localhost:8000/api/config', newConfig);
+            // Refresh history after save
+            fetchFolderHistory();
+        } catch (error) {
+            console.error('Failed to save config:', error);
+        }
+    };
+
     const handleAddFolder = async () => {
         try {
             const response = await axios.get('http://localhost:8000/api/browse');
             if (response.data.folder && !config.folders.includes(response.data.folder)) {
-                setConfig(prev => ({
-                    ...prev,
-                    folders: [...prev.folders, response.data.folder]
-                }));
+                const newConfig = {
+                    ...config,
+                    folders: [...config.folders, response.data.folder]
+                };
+                setConfig(newConfig);
+                await saveConfigData(newConfig);
             }
         } catch (error) {
             console.error('Failed to browse:', error);
         }
     };
 
-    const handleRemoveFolder = (folderToRemove) => {
-        setConfig(prev => ({
-            ...prev,
-            folders: prev.folders.filter(f => f !== folderToRemove)
-        }));
+    const handleAddFromHistory = async (folder) => {
+        if (!config.folders.includes(folder)) {
+            const newConfig = {
+                ...config,
+                folders: [...config.folders, folder]
+            };
+            setConfig(newConfig);
+            await saveConfigData(newConfig);
+            setShowHistory(false);
+        }
+    };
+
+    const handleRemoveFolder = async (folderToRemove) => {
+        const newConfig = {
+            ...config,
+            folders: config.folders.filter(f => f !== folderToRemove)
+        };
+        setConfig(newConfig);
+        await saveConfigData(newConfig);
     };
 
     const handleIndex = async () => {
@@ -183,6 +226,50 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                                 <FolderOpen className="w-3.5 h-3.5" />
                                 Add Folder
                             </button>
+
+                            {/* History Dropdown */}
+                            {folderHistory.length > 0 && (
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowHistory(!showHistory)}
+                                        className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-secondary/20 text-secondary-foreground text-xs font-bold hover:bg-secondary/30 transition-colors ml-2"
+                                        title="Previously used folders"
+                                    >
+                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                        Recent
+                                        {showHistory ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                    </button>
+
+                                    {showHistory && (
+                                        <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden">
+                                            <div className="p-2 border-b border-border bg-muted/30">
+                                                <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Recent Folders</h4>
+                                            </div>
+                                            <div className="max-h-48 overflow-y-auto py-1">
+                                                {folderHistory.filter(f => !config.folders.includes(f)).length > 0 ? (
+                                                    folderHistory
+                                                        .filter(f => !config.folders.includes(f))
+                                                        .map((folder, idx) => (
+                                                            <button
+                                                                key={idx}
+                                                                onClick={() => handleAddFromHistory(folder)}
+                                                                className="w-full text-left px-3 py-2 text-xs hover:bg-accent hover:text-accent-foreground truncate transition-colors flex items-center gap-2"
+                                                                title={folder}
+                                                            >
+                                                                <FolderOpen className="w-3 h-3 opacity-50" />
+                                                                <span className="truncate">{folder}</span>
+                                                            </button>
+                                                        ))
+                                                ) : (
+                                                    <div className="px-3 py-4 text-center text-xs text-muted-foreground italic">
+                                                        No new recent folders
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="space-y-2">

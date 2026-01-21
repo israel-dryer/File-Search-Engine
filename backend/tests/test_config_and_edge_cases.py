@@ -81,7 +81,7 @@ class TestSearchHistoryEdgeCases(unittest.TestCase):
     
     def test_empty_query_handling(self):
         """Test handling of empty search queries."""
-        import database
+        from backend import database
         
         # Empty query should still be storable
         database.add_search_history("", 0, 0)
@@ -92,7 +92,7 @@ class TestSearchHistoryEdgeCases(unittest.TestCase):
     
     def test_very_long_query(self):
         """Test handling of very long search queries."""
-        import database
+        from backend import database
         
         long_query = "word " * 1000  # 5000+ characters
         
@@ -101,7 +101,7 @@ class TestSearchHistoryEdgeCases(unittest.TestCase):
         
     def test_special_characters_in_query(self):
         """Test handling of special characters in queries."""
-        import database
+        from backend import database
         
         special_query = "test's \"quoted\" <html> & special chars: 日本語"
         

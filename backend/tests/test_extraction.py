@@ -5,7 +5,7 @@ import sys
 # Add current directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from file_processing import extract_text
+from backend.file_processing import extract_text
 
 # Test folder
 test_folder = r'C:\Users\siddh\OneDrive\Desktop\Resume'

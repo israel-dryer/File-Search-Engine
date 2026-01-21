@@ -13,11 +13,14 @@ from datetime import datetime
 from typing import Dict, List, Any
 
 # Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+sys.path.insert(0, PROJECT_ROOT)
 
-MODELS_DIR = "models"
-RESULTS_FILE = "benchmark_results.json"
-RESULTS_MD = "benchmark_results.md"
+MODELS_DIR = os.path.join(PROJECT_ROOT, "models")
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+RESULTS_FILE = os.path.join(DATA_DIR, "benchmark_results.json")
+RESULTS_MD = os.path.join(DATA_DIR, "benchmark_results.md")
 
 # Test samples for consistent benchmarking
 TEST_SAMPLES = [
@@ -177,7 +180,7 @@ def benchmark_model(model_info: Dict[str, Any], verbose: bool = True) -> Benchma
         print(f"{'='*60}")
     
     try:
-        from llm_integration import get_embeddings, summarize
+        from backend.llm_integration import get_embeddings, summarize
         from langchain_community.llms import LlamaCpp
         
         baseline_memory = get_memory_usage_mb()

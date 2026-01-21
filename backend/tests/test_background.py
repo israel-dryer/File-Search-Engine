@@ -2,7 +2,7 @@ import unittest
 import tempfile
 import os
 from unittest.mock import patch, MagicMock
-from background import start_background_indexing, IndexingEventHandler
+from backend.background import start_background_indexing, IndexingEventHandler
 
 
 class TestBackground(unittest.TestCase):

@@ -27,29 +27,58 @@ npm run start          # Start backend (8000) + frontend (5173)
 
 ## Project Structure
 ```
-├── api.py              # FastAPI endpoints (main entry)
-├── database.py         # SQLite CRUD operations
-├── indexing.py         # FAISS index creation
-├── search.py           # Semantic search logic
-├── file_processing.py  # Text extraction (PDF, DOCX, XLSX, PPTX, TXT)
-├── llm_integration.py  # LLM provider abstraction
-├── model_manager.py    # GGUF model downloads
-├── tests/              # pytest tests
-│   ├── test_api.py, test_database.py, test_search.py
-│   ├── test_indexing.py, test_file_processing.py
-│   └── test_llm_integration_full.py
-├── frontend/src/
-│   ├── App.jsx         # Main component (holds global state)
-│   ├── components/     # UI components
-│   │   ├── Header.jsx, SearchBar.jsx, SearchResults.jsx
-│   │   ├── SettingsModal.jsx, ModelManager.jsx
-│   │   └── SearchHistory.jsx, FileList.jsx, BenchmarkResults.jsx
-│   └── test/           # Vitest tests
-├── models/             # Downloaded GGUF models
-├── config.ini          # User configuration
-├── index.faiss         # Vector embeddings (generated)
-└── metadata.db         # SQLite database (generated)
+├── backend/                # Python backend code
+│   ├── __init__.py         # Package marker
+│   ├── api.py              # FastAPI endpoints (main entry)
+│   ├── database.py         # SQLite CRUD operations
+│   ├── indexing.py         # FAISS index creation
+│   ├── search.py           # Semantic search logic
+│   ├── file_processing.py  # Text extraction (PDF, DOCX, XLSX, PPTX, TXT)
+│   ├── llm_integration.py  # LLM provider abstraction
+│   ├── model_manager.py    # GGUF model downloads
+│   ├── background.py       # Background task utilities
+│   └── tests/              # pytest tests
+│       ├── test_api.py, test_database.py, test_search.py
+│       ├── test_indexing.py, test_file_processing.py
+│       └── test_llm_integration_full.py
+├── frontend/               # React frontend
+│   ├── src/
+│   │   ├── App.jsx         # Main component (holds global state)
+│   │   ├── components/     # UI components
+│   │   │   ├── Header.jsx, SearchBar.jsx, SearchResults.jsx
+│   │   │   ├── SettingsModal.jsx, ModelManager.jsx
+│   │   │   └── SearchHistory.jsx, FileList.jsx, BenchmarkResults.jsx
+│   │   └── test/           # Vitest tests
+│   └── package.json
+├── scripts/                # Utility scripts
+│   ├── start_all.js        # Unified startup script
+│   ├── run_tests.py        # Test runner
+│   └── benchmark_models.py # Model benchmarking
+├── data/                   # Generated/runtime files
+│   ├── index.faiss         # Vector embeddings
+│   ├── index_docs.pkl      # Document chunks
+│   ├── index_tags.pkl      # Tag data
+│   ├── metadata.db         # SQLite database
+│   └── benchmark_results.json
+├── models/                 # Downloaded GGUF models
+├── .agent/                 # Agent configuration and skills
+├── config.ini              # User configuration
+├── requirements.txt        # Python dependencies
+└── package.json            # Node.js scripts
 ```
+
+### File Placement Protocol
+- **Backend Code**: ALL Python source files MUST go in `backend/` or `backend/tests/`.
+  - Exception: `api.py` is the entry point (in `backend/`).
+  - NO `.py` files in the project root.
+- **Scripts**: Maintenance, build, and benchmark scripts go in `scripts/`.
+- **Data**: All generated files (`.db`, `.faiss`, `.log`, `.json` results) MUST go in `data/`.
+  - Use `DATA_DIR` constant in code.
+- **Models**: Large model binaries go in `models/` (root) but code must reference `MODELS_DIR`.
+- **Tests**: 
+  - Backend tests: `backend/tests/`
+  - Frontend tests: `frontend/src/test/`
+- **Validation**: Run `npm run validate` to check structure compliance.
 
 ## Code Patterns
 
@@ -255,12 +284,17 @@ When working on file processing tasks, consult the relevant skill documentation:
 > **CRITICAL: Add entry here after EVERY change with date, description, and files.**
 
 ### 2026-01-21
+- **Reorganized project into clean folder structure** - Better separation of concerns
+  - `backend/`: All Python modules (api.py, database.py, indexing.py, etc.)
+  - `backend/tests/`: All pytest tests (moved from root tests/)
+  - `scripts/`: Utility scripts (run_tests.py, benchmark_models.py, start_all.js)
+  - `data/`: Generated files (index.faiss, metadata.db, benchmark_results.json)
+  - Updated all imports to use absolute `backend.` module prefix
+  - `package.json`: Updated scripts to use new paths (backend.api:app)
+  - `scripts/start_all.js`: Updated uvicorn command
+  - `scripts/run_tests.py`: Updated test discovery paths
+  - `AGENTS.md`: Updated project structure documentation
 - **Expanded model library for 32GB RAM systems** - Added 14 new model options
-  - `model_manager.py`: Added Q5_K_M, Q6_K, Q8_0 quantizations for higher quality
-  - New 13B models: Llama 2 13B, CodeLlama 13B
-  - New MoE models: Mixtral 8x7B (26.4GB), Nous Hermes 2 Mixtral
-  - New models: Qwen 2 7B, Yi 1.5 9B, Solar 10.7B, DeepSeek Coder 6.7B
-  - Categories now include: small, medium, large, extra-large, premium
 - **Fixed LLM model loading error** - Diagnosed why "Local model failed to load" appeared
   - Root cause: llama-2-7b and mistral-7b models corrupted/incompatible with llama_cpp version
   - `config.ini`: Changed model_path from llama-2-7b to phi-2.Q4_K_M.gguf (working model)
@@ -274,6 +308,11 @@ When working on file processing tasks, consult the relevant skill documentation:
   - `.agent/skills/xlsx/SKILL.md`, `.agent/skills/pptx/SKILL.md`
   - Added `Agent Skills` section to `AGENTS.md` referencing these files
   - Updated `.gitignore` to exclude `.agent/skills/`
+- **Improved Folder Management** - Solved "re-add folders" issue
+  - Added "Recent Folders" history dropdown in Settings
+  - Implemented auto-save when adding/removing folders
+  - Added `folder_history` table to `metadata.db` with migration from existing files
+  - `backend/database.py`, `backend/api.py`, `frontend/src/components/SettingsModal.jsx`
 
 ### 2026-01-09
 - **Enhanced LLM output quality** - AI now references filenames and quotes specific content
@@ -286,6 +325,12 @@ When working on file processing tasks, consult the relevant skill documentation:
   - `tests/test_api.py`, `test_database.py`, `test_llm_integration_full.py`, `test_indexing.py`, `test_config_and_edge_cases.py`
   - `frontend/src/test/SearchBar.test.jsx`, `SearchResults.test.jsx`, `SettingsModal.test.jsx`, `ModelManager.test.jsx`
 - **Created AGENTS.md** - Workspace instructions
+
+### 2026-01-21
+- **Folder Restructure Complete** - Backend files moved to `backend/`, scripts to `scripts/`, data to `data/`
+- **Updated Imports** - All modules now use absolute `backend.` imports
+- **Fixed File Locks** - Database initialization moved to startup event to prevent lock issues during tests
+- Files: `backend/*`, `scripts/*`, `package.json`, `AGENTS.md`
 
 ### Entry Template
 ```

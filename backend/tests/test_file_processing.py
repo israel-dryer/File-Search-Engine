@@ -2,7 +2,7 @@ import unittest
 import tempfile
 import os
 from unittest.mock import patch, mock_open
-from file_processing import extract_text
+from backend.file_processing import extract_text
 
 
 class TestFileProcessing(unittest.TestCase):
@@ -32,7 +32,7 @@ class TestFileProcessing(unittest.TestCase):
         result = extract_text(unsupported_file)
         self.assertIsNone(result)
     
-    @patch('file_processing.Document')
+    @patch('backend.file_processing.Document')
     def test_extract_text_docx(self, mock_doc):
         """Test text extraction from .docx files."""
         mock_doc_instance = mock_doc.return_value
@@ -45,7 +45,7 @@ class TestFileProcessing(unittest.TestCase):
         self.assertEqual(result, expected)
     
     @patch('builtins.open', new_callable=mock_open)
-    @patch('file_processing.PdfReader')
+    @patch('backend.file_processing.PdfReader')
     def test_extract_text_pdf(self, mock_pdf_reader, mock_file):
         """Test text extraction from .pdf files."""
         mock_page1 = type('Page', (), {})()
@@ -59,7 +59,7 @@ class TestFileProcessing(unittest.TestCase):
         expected = "Text from page 1\nText from page 2"
         self.assertEqual(result, expected)
     
-    @patch('file_processing.Presentation')
+    @patch('backend.file_processing.Presentation')
     def test_extract_text_pptx(self, mock_presentation):
         """Test text extraction from .pptx files."""
         mock_shape1 = type('Shape', (), {'text': 'Slide 1 text'})()
@@ -72,7 +72,7 @@ class TestFileProcessing(unittest.TestCase):
         expected = "Slide 1 text\nSlide 2 text"
         self.assertEqual(result, expected)
     
-    @patch('file_processing.load_workbook')
+    @patch('backend.file_processing.load_workbook')
     def test_extract_text_xlsx(self, mock_workbook):
         """Test text extraction from .xlsx files."""
         mock_cell1 = type('Cell', (), {})()

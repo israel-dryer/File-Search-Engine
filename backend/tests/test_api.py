@@ -10,6 +10,10 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from backend.api import app
 
+# Global patch to prevent database initialization during API tests
+# This avoids file locking issues with the running application
+patch('backend.database.init_database').start()
+
 
 class TestAPIConfig(unittest.TestCase):
     """Test cases for configuration endpoints."""
@@ -44,8 +48,9 @@ class TestAPIConfig(unittest.TestCase):
         self.assertEqual(data['auto_index'], True)
         self.assertEqual(data['provider'], 'local')
 
+    @patch('backend.database.add_folder_to_history')
     @patch('backend.api.save_config_file')
-    def test_update_config(self, mock_save_config):
+    def test_update_config(self, mock_save_config, mock_add_history):
         """Test updating configuration."""
         response = self.client.post("/api/config", json={
             "folders": ["/new/folder"],

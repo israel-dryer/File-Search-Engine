@@ -17,7 +17,7 @@ if not os.path.exists(test_folder):
     print(f"  ❌ Test folder not found: {test_folder}")
     sys.exit(1)
 
-from file_processing import extract_text
+from backend.file_processing import extract_text
 
 all_files = []
 for dirpath, _, filenames in os.walk(test_folder):
@@ -38,7 +38,7 @@ print(f"  ✓ Successfully extracted text from {successful}/5 files")
 
 # Step 3: Test database
 print("\n[STEP 3] Testing database...")
-import database
+from backend import database
 
 # Clear and test database
 database.clear_all_files()
@@ -62,7 +62,7 @@ print(f"  ✓ Retrieved {len(files)} files from database")
 
 # Step 4: Test model manager
 print("\n[STEP 4] Testing model manager...")
-from model_manager import get_available_models, get_local_models
+from backend.model_manager import get_available_models, get_local_models
 
 available = get_available_models()
 print(f"  ✓ {len(available)} models available for download:")

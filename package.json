@@ -12,7 +12,8 @@
         "test:full": "python scripts/run_tests.py",
         "test:frontend": "cd frontend && npm run test",
         "test:stress": "python backend/tests/stress_test.py",
-        "test:all": "npm run test && cd frontend && npm run test"
+        "test:all": "npm run test && cd frontend && npm run test",
+        "validate": "python scripts/validate_structure.py"
     },
     "devDependencies": {
         "concurrently": "^8.2.2",

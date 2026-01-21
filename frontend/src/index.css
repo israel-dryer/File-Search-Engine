@@ -6,75 +6,77 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    /* Light Mode - Cosmic Light */
+    --background: 220 30% 97%;
+    --foreground: 240 10% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 240 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 240 10% 10%;
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 250 85% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11.2%;
+    --secondary: 250 30% 95%;
+    --secondary-foreground: 240 10% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 20% 94%;
+    --muted-foreground: 220 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222 47% 11.2%;
+    --accent: 280 70% 60%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221 83% 53%;
+    --border: 220 20% 88%;
+    --input: 220 20% 88%;
+    --ring: 250 85% 60%;
 
     --radius: 1rem;
 
-    /* 3D Shadows */
-    --shadow-depth: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-3d: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    --inner-3d: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+    /* Cosmic Gradients */
+    --cosmic-start: 250 85% 60%;
+    --cosmic-mid: 280 70% 55%;
+    --cosmic-end: 200 90% 50%;
   }
 
   .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
+    /* Dark Mode - Deep Cosmic */
+    --background: 240 20% 6%;
+    --foreground: 220 20% 95%;
 
-    --card: 222 47% 9%;
-    --card-foreground: 210 40% 98%;
+    --card: 240 20% 9%;
+    --card-foreground: 220 20% 95%;
 
-    --popover: 222 47% 9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 20% 9%;
+    --popover-foreground: 220 20% 95%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 250 85% 65%;
+    --primary-foreground: 240 20% 6%;
 
-    --secondary: 222 47% 14%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 240 20% 14%;
+    --secondary-foreground: 220 20% 95%;
 
-    --muted: 222 47% 14%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 240 15% 16%;
+    --muted-foreground: 220 15% 60%;
 
-    --accent: 222 47% 14%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 280 70% 65%;
+    --accent-foreground: 240 20% 6%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 35%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 222 47% 16%;
-    --input: 222 47% 16%;
-    --ring: 217 91% 60%;
+    --border: 240 15% 18%;
+    --input: 240 15% 18%;
+    --ring: 250 85% 65%;
 
-    /* Dark 3D Shadows */
-    --shadow-depth: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
-    --shadow-3d: 0 25px 30px -5px rgba(0, 0, 0, 0.6), 0 12px 15px -6px rgba(0, 0, 0, 0.4);
-    --inner-3d: inset 0 2px 4px 0 rgba(255, 255, 255, 0.05);
+    /* Dark Cosmic Gradients */
+    --cosmic-start: 250 85% 55%;
+    --cosmic-mid: 280 70% 50%;
+    --cosmic-end: 200 90% 45%;
   }
 }
 
@@ -91,171 +93,270 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    background-image:
-      radial-gradient(at 0% 0%, hsla(217, 91%, 60%, 0.05) 0, transparent 50%),
-      radial-gradient(at 100% 0%, hsla(221, 83%, 53%, 0.05) 0, transparent 50%);
   }
 }
 
-/* 3D Font Effects */
-.text-3d {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 800;
-  text-shadow:
-    0 1px 0 #ccc,
-    0 2px 0 #c9c9c9,
-    0 3px 0 #bbb,
-    0 4px 0 #b9b9b9,
-    0 5px 0 #aaa,
-    0 6px 1px rgba(0, 0, 0, .1),
-    0 0 5px rgba(0, 0, 0, .1),
-    0 1px 3px rgba(0, 0, 0, .3),
-    0 3px 5px rgba(0, 0, 0, .2),
-    0 5px 10px rgba(0, 0, 0, .25),
-    0 10px 10px rgba(0, 0, 0, .2),
-    0 20px 20px rgba(0, 0, 0, .15);
+/* ═══════════════════════════════════════════════════════════════
+   COSMIC GLASSMORPHISM DESIGN SYSTEM
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Cosmic Background - Animated Gradient */
+.bg-cosmic {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background)) 0%,
+    hsl(240 20% 8%) 50%,
+    hsl(250 30% 12%) 100%
+  );
+  position: relative;
+  overflow: hidden;
 }
 
-.dark .text-3d {
-  text-shadow:
-    0 1px 0 #111,
-    0 2px 0 #0f0f0f,
-    0 3px 0 #0d0d0d,
-    0 4px 0 #0b0b0b,
-    0 5px 0 #090909,
-    0 6px 1px rgba(0, 0, 0, .5),
-    0 0 5px rgba(0, 0, 0, .5),
-    0 1px 3px rgba(0, 0, 0, .8),
-    0 3px 5px rgba(0, 0, 0, .7),
-    0 10px 20px rgba(0, 0, 0, 0.8);
+.bg-cosmic::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse at 0% 0%, hsla(var(--cosmic-start), 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 0%, hsla(var(--cosmic-mid), 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, hsla(var(--cosmic-end), 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 50%, hsla(var(--accent), 0.08) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+  animation: cosmic-pulse 12s ease-in-out infinite alternate;
 }
 
-/* 3D Card Utility */
-.card-3d {
-  @apply transition-all duration-300 transform-gpu;
-  box-shadow: var(--shadow-3d);
-  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
-  border: 1px solid hsla(var(--border), 0.5);
+@keyframes cosmic-pulse {
+  0% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0.8; transform: scale(1); }
 }
 
-.card-3d:hover {
-  transform: translateY(-8px) scale(1.01) perspective(1000px) rotateX(2deg);
-  box-shadow: 0 35px 40px -10px rgba(0, 0, 0, 0.25);
+/* Glass Card - Primary */
+.glass-card {
+  background: hsla(var(--card), 0.6);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid hsla(var(--border), 0.4);
+  box-shadow: 
+    0 8px 32px hsla(0 0% 0% / 0.12),
+    inset 0 1px 0 hsla(255 255 255 / 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.dark .card-3d:hover {
-  box-shadow: 0 40px 50px -10px rgba(0, 0, 0, 0.7);
+.glass-card:hover {
+  background: hsla(var(--card), 0.75);
+  border-color: hsla(var(--primary), 0.3);
+  box-shadow: 
+    0 12px 40px hsla(var(--primary), 0.15),
+    0 4px 12px hsla(0 0% 0% / 0.1),
+    inset 0 1px 0 hsla(255 255 255 / 0.08);
+  transform: translateY(-2px);
 }
 
-/* Glassmorphism 2.0 */
-.glass-v2 {
+/* Glass Navbar */
+.glass-nav {
   background: hsla(var(--background), 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid hsla(var(--border), 0.3);
+  box-shadow: 0 4px 30px hsla(0 0% 0% / 0.1);
+}
+
+/* Glass Input */
+.glass-input {
+  background: hsla(var(--secondary), 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsla(var(--border), 0.5);
+  transition: all 0.3s ease;
+}
+
+.glass-input:focus {
+  background: hsla(var(--secondary), 0.7);
+  border-color: hsla(var(--primary), 0.5);
+  box-shadow: 
+    0 0 0 3px hsla(var(--primary), 0.15),
+    0 0 20px hsla(var(--primary), 0.2);
+  outline: none;
+}
+
+/* Glass Modal Overlay */
+.glass-overlay {
+  background: hsla(var(--background), 0.85);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
   border: 1px solid hsla(var(--border), 0.3);
-  box-shadow: var(--shadow-depth);
+  box-shadow: 
+    0 25px 50px -12px hsla(0 0% 0% / 0.25),
+    inset 0 1px 0 hsla(255 255 255 / 0.05);
 }
 
-/* Premium Scrollbar */
-::-webkit-scrollbar {
-  width: 10px;
+/* Glow Effects */
+.glow-primary {
+  box-shadow: 0 0 20px hsla(var(--primary), 0.4);
 }
 
-::-webkit-scrollbar-track {
-  @apply bg-transparent;
+.glow-accent {
+  box-shadow: 0 0 20px hsla(var(--accent), 0.4);
 }
 
-::-webkit-scrollbar-thumb {
-  @apply bg-primary/20 rounded-full border-4 border-transparent bg-clip-padding;
-  transition: background 0.2s;
+.text-glow {
+  text-shadow: 0 0 20px hsla(var(--primary), 0.5);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-primary/40;
+/* Cosmic Button */
+.btn-cosmic {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+  color: hsl(var(--primary-foreground));
+  border: none;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-/* Animations */
+.btn-cosmic::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, hsla(255 255 255 / 0.2) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.btn-cosmic:hover::before {
+  opacity: 1;
+}
+
+.btn-cosmic:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px hsla(var(--primary), 0.4);
+}
+
+/* Shimmer Animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    hsla(var(--primary), 0) 0%,
+    hsla(var(--primary), 0.3) 50%,
+    hsla(var(--primary), 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Floating Animation */
 @keyframes float {
-  0% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
-
-  100% {
-    transform: translateY(0px);
-  }
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
 }
 
 .animate-float {
   animation: float 4s ease-in-out infinite;
 }
 
-/* --- New Design Assets --- */
-
-.bg-neural {
-  background-color: hsla(var(--background));
-  background-image:
-    radial-gradient(at 0% 0%, hsla(221, 83%, 53%, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(262, 83%, 58%, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, hsla(180, 100%, 50%, 0.1) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, hsla(221, 83%, 53%, 0.15) 0px, transparent 50%);
-  background-size: 150% 150%;
-  animation: gradient-shift 15s ease infinite;
+/* Particle Effect Container */
+.particles-container {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
 }
 
-@keyframes gradient-shift {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: hsla(var(--primary), 0.5);
+  border-radius: 50%;
+  animation: particle-float 15s infinite;
 }
 
-.bg-grid-pattern {
-  background-size: 40px 40px;
-  background-image:
-    linear-gradient(to right, hsla(var(--primary), 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, hsla(var(--primary), 0.05) 1px, transparent 1px);
-  mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+@keyframes particle-float {
+  0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
 }
 
-.card-hover-effect {
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  transform-style: preserve-3d;
+/* Premium Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.card-hover-effect:hover {
-  transform: translateY(-5px) scale(1.02);
-  box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04),
-    0 0 0 1px hsla(var(--primary), 0.5);
-  /* Glow border */
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.bg-picasso {
-  background:
-    radial-gradient(circle at 15% 50%, hsla(221, 83%, 53%, 0.15), transparent 25%),
-    radial-gradient(circle at 85% 30%, hsla(262, 83%, 58%, 0.15), transparent 25%),
-    radial-gradient(circle at 50% 50%, hsla(320, 70%, 50%, 0.1), transparent 50%);
-  filter: blur(40px);
-  animation: pulse-color 10s infinite alternate;
+::-webkit-scrollbar-thumb {
+  background: hsla(var(--primary), 0.3);
+  border-radius: 100px;
 }
 
-@keyframes pulse-color {
-  0% {
-    filter: blur(40px) hue-rotate(0deg);
-  }
+::-webkit-scrollbar-thumb:hover {
+  background: hsla(var(--primary), 0.5);
+}
 
-  100% {
-    filter: blur(60px) hue-rotate(30deg);
-  }
+/* AI Insights Panel */
+.ai-panel {
+  background: linear-gradient(
+    180deg,
+    hsla(var(--card), 0.8) 0%,
+    hsla(var(--card), 0.6) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid hsla(var(--primary), 0.2);
+  box-shadow: 
+    0 0 40px hsla(var(--primary), 0.1),
+    inset 0 1px 0 hsla(255 255 255 / 0.05);
+}
+
+/* Result Card Hover Glow */
+.result-card {
+  @apply glass-card rounded-xl overflow-hidden;
+  position: relative;
+}
+
+.result-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, hsla(var(--primary), 0.3), hsla(var(--accent), 0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.result-card:hover::before {
+  opacity: 1;
+}
+
+/* Section Divider */
+.cosmic-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsla(var(--primary), 0.3) 50%,
+    transparent 100%
+  );
+}
+
+/* Progress Bar Glow */
+.progress-cosmic {
+  background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+  box-shadow: 0 0 10px hsla(var(--primary), 0.5);
 }

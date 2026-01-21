@@ -222,15 +222,17 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-background w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-xl border border-border shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="glass-overlay w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-2xl shadow-2xl">
                 {/* Header */}
-                <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-border bg-background">
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                        <Settings className="w-5 h-5" />
+                <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-border/30 bg-background/80 backdrop-blur-md">
+                    <h2 className="text-lg font-bold flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-primary/10">
+                            <Settings className="w-5 h-5 text-primary" />
+                        </div>
                         Settings
                     </h2>
-                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent">
+                    <button onClick={onClose} className="p-2 rounded-xl hover:bg-secondary transition-colors">
                         <X className="w-4 h-4" />
                     </button>
                 </div>
@@ -537,20 +539,20 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                 </div>
 
                 {/* Footer */}
-                <div className="sticky bottom-0 p-4 border-t border-border bg-background flex justify-end gap-2">
+                <div className="sticky bottom-0 p-4 border-t border-border/30 bg-background/80 backdrop-blur-md flex justify-end gap-3">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 rounded-lg text-sm hover:bg-accent transition-colors"
+                        className="px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-secondary transition-colors"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSave}
                         disabled={isLoading}
-                        className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 flex items-center gap-2"
+                        className="px-5 py-2.5 rounded-xl btn-cosmic text-sm font-semibold flex items-center gap-2 disabled:opacity-50"
                     >
                         {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        Save
+                        Save Changes
                     </button>
                 </div>
             </div>

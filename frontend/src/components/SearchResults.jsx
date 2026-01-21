@@ -1,7 +1,24 @@
 import React from 'react';
-import { ExternalLink, File, Sparkles } from 'lucide-react';
+import { ExternalLink, File, Sparkles, FileText, Image, Table, Presentation, Brain } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+
+const getFileIcon = (fileName) => {
+    const ext = fileName?.split('.').pop()?.toLowerCase();
+    switch (ext) {
+        case 'pdf': return <FileText className="w-4 h-4 text-red-400" />;
+        case 'docx':
+        case 'doc': return <FileText className="w-4 h-4 text-blue-400" />;
+        case 'xlsx':
+        case 'xls': return <Table className="w-4 h-4 text-green-400" />;
+        case 'pptx':
+        case 'ppt': return <Presentation className="w-4 h-4 text-orange-400" />;
+        case 'png':
+        case 'jpg':
+        case 'jpeg': return <Image className="w-4 h-4 text-purple-400" />;
+        default: return <File className="w-4 h-4 text-muted-foreground" />;
+    }
+};
 
 const SearchResults = ({ results, aiAnswer }) => {
     if (!results.length && !aiAnswer) return null;
@@ -15,72 +32,112 @@ const SearchResults = ({ results, aiAnswer }) => {
     };
 
     return (
-        <div className="w-full max-w-3xl mx-auto mt-8 pb-20">
+        <div className="w-full mt-8 pb-20">
+            <div className="flex gap-6">
+                {/* Main Results Column */}
+                <div className="flex-1 space-y-4">
+                    {results.map((result, index) => (
+                        <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, delay: index * 0.05 }}
+                            className="result-card"
+                        >
+                            {/* File Header */}
+                            {result.file_name && (
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-secondary/20">
+                                    <button
+                                        onClick={() => handleOpenFile(result.file_path)}
+                                        className="flex items-center gap-3 text-sm font-medium hover:text-primary transition-colors group"
+                                    >
+                                        <div className="p-1.5 rounded-lg bg-secondary/50 group-hover:bg-primary/10 transition-colors">
+                                            {getFileIcon(result.file_name)}
+                                        </div>
+                                        <span className="truncate max-w-[300px]">{result.file_name}</span>
+                                    </button>
+                                    <button
+                                        onClick={() => handleOpenFile(result.file_path)}
+                                        className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                                    >
+                                        <ExternalLink className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
 
+                            {/* Content Preview */}
+                            <div className="p-4">
+                                <p className="text-sm text-foreground/80 leading-relaxed line-clamp-4">
+                                    {result.document}
+                                </p>
+
+                                {/* Tags */}
+                                {result.tags && result.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-4">
+                                        {result.tags.map((tag, i) => (
+                                            <span
+                                                key={i}
+                                                className="px-2.5 py-1 rounded-lg text-xs font-medium bg-primary/10 text-primary/80 border border-primary/20"
+                                            >
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* AI Insights Sidebar */}
+                {aiAnswer && (
+                    <motion.aside
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.4, delay: 0.2 }}
+                        className="hidden lg:block w-80 flex-shrink-0"
+                    >
+                        <div className="sticky top-24 ai-panel rounded-2xl p-5">
+                            {/* Header */}
+                            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-primary/20">
+                                <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20">
+                                    <Brain className="w-5 h-5 text-primary" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold">AI Insights</h3>
+                                    <p className="text-xs text-muted-foreground">Powered by local LLM</p>
+                                </div>
+                            </div>
+
+                            {/* Answer Content */}
+                            <div className="prose prose-sm max-w-none text-foreground/85 leading-relaxed">
+                                <p>{aiAnswer}</p>
+                            </div>
+
+                            {/* Decorative Glow */}
+                            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-2xl blur-xl opacity-30 -z-10" />
+                        </div>
+                    </motion.aside>
+                )}
+            </div>
+
+            {/* Mobile AI Answer (shown on small screens) */}
             {aiAnswer && (
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="mb-8 p-4 bg-secondary/50 rounded-lg border border-border"
+                    className="lg:hidden mb-6 ai-panel rounded-2xl p-4"
                 >
-                    <div className="flex items-start gap-3 mb-3">
-                        <div className="flex-shrink-0 pt-0.5">
-                            <Sparkles className="w-5 h-5 text-primary" />
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20">
+                            <Sparkles className="w-4 h-4 text-primary" />
                         </div>
-                        <h3 className="text-md font-semibold text-foreground">AI Answer</h3>
+                        <h3 className="text-sm font-bold">AI Insights</h3>
                     </div>
-                    <div className="prose prose-sm max-w-none text-foreground/80">
-                        <p>{aiAnswer}</p>
-                    </div>
+                    <p className="text-sm text-foreground/80">{aiAnswer}</p>
                 </motion.div>
             )}
-
-            <div className="space-y-4">
-                {results.map((result, index) => (
-                    <motion.div
-                        key={index}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="border border-border rounded-lg overflow-hidden transition-colors hover:bg-secondary/50"
-                    >
-                        {result.file_name && (
-                            <div className="flex items-center justify-between px-4 py-2 bg-secondary/30 border-b border-border">
-                                <button
-                                    onClick={() => handleOpenFile(result.file_path)}
-                                    className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors group"
-                                >
-                                    <File className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
-                                    <span className="truncate">{result.file_name}</span>
-                                </button>
-                                <button onClick={() => handleOpenFile(result.file_path)} className="p-1.5 rounded-md hover:bg-muted">
-                                    <ExternalLink className="w-4 h-4 text-muted-foreground" />
-                                </button>
-                            </div>
-                        )}
-
-                        <div className="p-4">
-                            <p className="text-sm text-foreground/80 leading-relaxed">
-                                {result.document}
-                            </p>
-
-                            {result.tags && result.tags.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mt-4">
-                                    {result.tags.map((tag, i) => (
-                                        <span
-                                            key={i}
-                                            className="px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground border border-border"
-                                        >
-                                            {tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </motion.div>
-                ))}
-            </div>
         </div>
     );
 };

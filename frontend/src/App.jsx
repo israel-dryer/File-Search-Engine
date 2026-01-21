@@ -5,6 +5,7 @@ import SearchResults from './components/SearchResults';
 import SearchHistory from './components/SearchHistory';
 import SettingsModal from './components/SettingsModal';
 import AgentChat from './components/AgentChat';
+import CosmicBackground from './components/CosmicBackground';
 import axios from 'axios';
 import { History } from 'lucide-react';
 
@@ -144,7 +145,8 @@ function App() {
     };
 
     return (
-        <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
+        <div className="min-h-screen bg-cosmic text-foreground selection:bg-primary/20 relative">
+            <CosmicBackground />
             <Header
                 darkMode={darkMode}
                 toggleDarkMode={() => setDarkMode(!darkMode)}

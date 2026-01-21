@@ -1,22 +1,23 @@
 # Model Benchmark Results
 
-*Generated: 2026-01-21 02:56:20*
+*Generated: 2026-01-22 02:54:34*
 
 ## System Info
-- **RAM**: 31.7 GB total, 3.8 GB available
+- **RAM**: 31.7 GB total, 15.1 GB available
 - **CPU Cores**: 20
 
 ## Results
 
 | Model | Size | Load Time | TPS | Fact Score | Memory |
 |-------|------|-----------|-----|------------|--------|
-| gemma 2b it Q4_K_M | 1426MB | 1.4s | 1.2 | 43% | 2199MB |
-| mistral 7b instruct v0 2 Q4_K_M | 4166MB | 2.7s | 0.8 | 86% | 4438MB |
-| phi 2 Q4_K_M | 1706MB | 1.4s | 2.1 | 49% | 1997MB |
-| tinyllama 1 1b chat v1 0 Q4_K_M | 638MB | 0.5s | 2.7 | 63% | 772MB |
+| gemma 2b it Q4_K_M | 1426MB | 0.5s | 4.1 | 41% | 1967MB |
+| mistral 7b instruct v0 2 Q4_K_M | 4166MB | 0.7s | 3.0 | 87% | 4518MB |
+| Mistral 7B Instruct v0 3 Q8_0 | 7346MB | 1.7s | 2.3 | 79% | 7627MB |
+| phi 2 Q4_K_M | 1706MB | 0.6s | 7.0 | 71% | 2469MB |
+| tinyllama 1 1b chat v1 0 Q4_K_M | 638MB | 0.2s | 15.4 | 39% | 767MB |
 
 ## Analysis
 
-- **Fastest**: tinyllama 1 1b chat v1 0 Q4_K_M (2.7 tokens/sec)
-- **Most Accurate**: mistral 7b instruct v0 2 Q4_K_M (86% fact retention)
-- **Most Efficient**: tinyllama 1 1b chat v1 0 Q4_K_M (772 MB)
+- **Fastest**: tinyllama 1 1b chat v1 0 Q4_K_M (15.4 tokens/sec)
+- **Most Accurate**: mistral 7b instruct v0 2 Q4_K_M (87% fact retention)
+- **Most Efficient**: tinyllama 1 1b chat v1 0 Q4_K_M (767 MB)

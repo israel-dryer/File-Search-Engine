@@ -3,7 +3,7 @@
 Master Test Runner for File Search Engine
 
 This script discovers and runs all unit tests in the tests directory.
-It provides detailed output and summary statistics.
+It provides detailed output with a LIVE PROGRESS BAR and summary statistics.
 
 Usage:
     python run_tests.py              # Run all tests
@@ -30,6 +30,7 @@ class Colors:
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
     RED = '\033[91m'
+    CYAN = '\033[96m'
     ENDC = '\033[0m'
     BOLD = '\033[1m'
 
@@ -38,6 +39,85 @@ def print_header(text):
     print(f"\n{Colors.BLUE}{Colors.BOLD}{'='*60}{Colors.ENDC}")
     print(f"{Colors.BLUE}{Colors.BOLD}{text:^60}{Colors.ENDC}")
     print(f"{Colors.BLUE}{Colors.BOLD}{'='*60}{Colors.ENDC}\n")
+
+
+class ProgressTestResult(unittest.TestResult):
+    """Custom TestResult that shows a progress bar and current test name."""
+    
+    def __init__(self, total_tests, stream=sys.stdout):
+        super().__init__()
+        self.total_tests = total_tests
+        self.current_test = 0
+        self.stream = stream
+        self.passed = 0
+        self.start_time = time.time()
+        
+    def _print_progress(self, status_char, test_name, color=Colors.GREEN):
+        """Print progress bar with current test info."""
+        self.current_test += 1
+        percentage = (self.current_test / self.total_tests) * 100
+        bar_width = 30
+        filled = int(bar_width * self.current_test / self.total_tests)
+        bar = '█' * filled + '░' * (bar_width - filled)
+        
+        # Get short test name
+        short_name = str(test_name).split(' ')[0]
+        if len(short_name) > 40:
+            short_name = short_name[:37] + '...'
+        
+        elapsed = time.time() - self.start_time
+        
+        # Print progress line
+        self.stream.write(f"\r{Colors.CYAN}[{bar}] {percentage:5.1f}%{Colors.ENDC} ")
+        self.stream.write(f"({self.current_test}/{self.total_tests}) ")
+        self.stream.write(f"{color}{status_char}{Colors.ENDC} ")
+        self.stream.write(f"{short_name:<45} ")
+        self.stream.write(f"[{elapsed:.1f}s]")
+        self.stream.write(" " * 10)  # Clear any leftover chars
+        self.stream.write("\n")
+        self.stream.flush()
+        
+    def startTest(self, test):
+        super().startTest(test)
+        
+    def addSuccess(self, test):
+        super().addSuccess(test)
+        self.passed += 1
+        self._print_progress('✓', test, Colors.GREEN)
+        
+    def addFailure(self, test, err):
+        super().addFailure(test, err)
+        self._print_progress('✗', test, Colors.RED)
+        
+    def addError(self, test, err):
+        super().addError(test, err)
+        self._print_progress('E', test, Colors.RED)
+        
+    def addSkip(self, test, reason):
+        super().addSkip(test, reason)
+        self._print_progress('S', test, Colors.YELLOW)
+
+
+class ProgressTestRunner:
+    """Test runner that uses ProgressTestResult for visual progress."""
+    
+    def __init__(self, stream=sys.stdout):
+        self.stream = stream
+        
+    def run(self, suite):
+        """Run the test suite with progress tracking."""
+        # Count total tests
+        total_tests = suite.countTestCases()
+        print(f"{Colors.CYAN}Found {total_tests} tests to run...{Colors.ENDC}\n")
+        
+        # Create result with progress tracking
+        result = ProgressTestResult(total_tests, self.stream)
+        
+        # Run tests
+        suite(result)
+        
+        return result
+
 
 def run_quick_tests():
     """Run only quick unit tests (skip slow model loading tests)."""
@@ -110,9 +190,8 @@ def main():
         print(f"Running ALL tests...\n")
         suite = run_all_tests()
     
-    # Create test runner
-    verbosity = 2 if args.verbose else 1
-    runner = unittest.TextTestRunner(verbosity=verbosity, buffer=True)
+    # Create test runner with progress bar
+    runner = ProgressTestRunner()
     
     # Run tests
     result = runner.run(suite)
@@ -127,7 +206,7 @@ def main():
     failures = len(result.failures)
     errors = len(result.errors)
     skipped = len(result.skipped)
-    passed = total_tests - failures - errors - skipped
+    passed = result.passed
     
     print(f"  Total Tests:  {total_tests}")
     print(f"  {Colors.GREEN}Passed:       {passed}{Colors.ENDC}")
@@ -150,14 +229,19 @@ def main():
         print(f"\n{Colors.RED}{Colors.BOLD}FAILURES:{Colors.ENDC}")
         for test, traceback in result.failures:
             print(f"\n  ✗ {test}")
-            print(f"    {traceback.split(chr(10))[0]}")
+            # Print first few lines of traceback
+            lines = traceback.split('\n')
+            for line in lines[:5]:
+                print(f"    {line}")
     
     # Print errors details
     if result.errors:
         print(f"\n{Colors.RED}{Colors.BOLD}ERRORS:{Colors.ENDC}")
         for test, traceback in result.errors:
             print(f"\n  ✗ {test}")
-            print(f"    {traceback.split(chr(10))[0]}")
+            lines = traceback.split('\n')
+            for line in lines[:5]:
+                print(f"    {line}")
     
     # Final status
     if failures == 0 and errors == 0:

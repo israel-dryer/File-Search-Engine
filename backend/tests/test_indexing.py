@@ -34,8 +34,9 @@ class TestIndexing(unittest.TestCase):
         mock_get_embeddings.return_value = mock_embeddings_model
         
         # Mock the get_tags function
-        with patch('indexing.get_tags', return_value="test, indexing"):
-            index, docs, tags = create_index(self.test_folder, "openai", "fake_api_key")
+        with patch('backend.indexing.get_tags', return_value="test, indexing"):
+            res = create_index(self.test_folder, "openai", "fake_api_key")
+            index, docs, tags, idx_sum, clus_sum, clus_map, bm25 = res
             
             # Verify the index was created
             self.assertIsNotNone(index)
@@ -56,8 +57,9 @@ class TestIndexing(unittest.TestCase):
         mock_embeddings_model = MagicMock()
         mock_get_embeddings.return_value = mock_embeddings_model
         
-        with patch('indexing.get_tags', return_value=""):
-            index, docs, tags = create_index(empty_folder, "openai", "fake_api_key")
+        with patch('backend.indexing.get_tags', return_value=""):
+            res = create_index(empty_folder, "openai", "fake_api_key")
+            index, docs, tags, idx_sum, clus_sum, clus_map, bm25 = res
             
             # Verify the result is None, None, None
             self.assertIsNone(index)
@@ -86,7 +88,8 @@ class TestIndexing(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(self.temp_dir, "test_index_tags.pkl")))
         
         # Load the index
-        loaded_index, loaded_docs, loaded_tags = load_index(index_path)
+        res = load_index(index_path)
+        loaded_index, loaded_docs, loaded_tags, idx_sum, clus_sum, clus_map, bm25 = res
         
         # Verify the loaded data matches the original
         self.assertIsNotNone(loaded_index)
@@ -109,7 +112,8 @@ class TestIndexing(unittest.TestCase):
         ]
         
         index_path = "fake_index.faiss"
-        loaded_index, loaded_docs, loaded_tags = load_index(index_path)
+        res = load_index(index_path)
+        loaded_index, loaded_docs, loaded_tags, idx_sum, clus_sum, clus_map, bm25 = res
         
         # Verify the functions were called
         mock_read_index.assert_called_once_with(index_path)
@@ -153,12 +157,13 @@ class TestIndexingMultipleFolders(unittest.TestCase):
         mock_embeddings_model.embed_documents.return_value = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
         mock_get_embeddings.return_value = mock_embeddings_model
         
-        with patch('indexing.get_tags', return_value="test"):
-            index, docs, tags = create_index(
+        with patch('backend.indexing.get_tags', return_value="test"):
+            res = create_index(
                 [self.folder1, self.folder2], 
                 "openai", 
                 "fake_key"
             )
+            index, docs, tags, idx_sum, clus_sum, clus_map, bm25 = res
             
             self.assertIsNotNone(index)
             self.assertEqual(len(docs), 2)
@@ -177,7 +182,7 @@ class TestIndexingMultipleFolders(unittest.TestCase):
         def progress_callback(current, total, filename):
             progress_calls.append((current, total, filename))
         
-        with patch('indexing.get_tags', return_value="test"):
+        with patch('backend.indexing.get_tags', return_value="test"):
             create_index(self.folder1, "openai", "fake_key", progress_callback=progress_callback)
             
             # Verify progress was called
@@ -185,15 +190,16 @@ class TestIndexingMultipleFolders(unittest.TestCase):
 
     def test_create_index_nonexistent_folder(self):
         """Test creating index with nonexistent folder."""
-        with patch('indexing.get_embeddings') as mock_embed:
+        with patch('backend.indexing.get_embeddings') as mock_embed:
             mock_embeddings_model = MagicMock()
             mock_embed.return_value = mock_embeddings_model
             
-            index, docs, tags = create_index(
+            res = create_index(
                 "/nonexistent/folder/path", 
                 "openai", 
                 "fake_key"
             )
+            index, docs, tags, idx_sum, clus_sum, clus_map, bm25 = res
             
             self.assertIsNone(index)
 
@@ -207,13 +213,14 @@ class TestIndexingMultipleFolders(unittest.TestCase):
         mock_embeddings_model.embed_documents.return_value = [[0.1, 0.2, 0.3]]
         mock_get_embeddings.return_value = mock_embeddings_model
         
-        with patch('indexing.get_tags', return_value="test"):
+        with patch('backend.indexing.get_tags', return_value="test"):
             # Pass string instead of list
-            index, docs, tags = create_index(
+            res = create_index(
                 self.folder1,  # String, not list
                 "openai", 
                 "fake_key"
             )
+            index, docs, tags, idx_sum, clus_sum, clus_map, bm25 = res
             
             self.assertIsNotNone(index)
 
@@ -267,7 +274,8 @@ class TestLoadIndex(unittest.TestCase):
         save_index(original_index, original_docs, original_tags, index_path)
         
         # Load and verify
-        loaded_index, loaded_docs, loaded_tags = load_index(index_path)
+        res = load_index(index_path)
+        loaded_index, loaded_docs, loaded_tags, idx_sum, clus_sum, clus_map, bm25 = res
         
         self.assertEqual(loaded_index.ntotal, 2)
         self.assertEqual(loaded_docs, original_docs)

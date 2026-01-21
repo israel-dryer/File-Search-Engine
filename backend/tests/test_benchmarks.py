@@ -16,14 +16,14 @@ class TestBenchmarkModels(unittest.TestCase):
     def test_import_benchmark_module(self):
         """Test that benchmark_models module can be imported."""
         try:
-            import benchmark_models
+            from scripts import benchmark_models
             self.assertTrue(True)
         except ImportError as e:
             self.fail(f"Failed to import benchmark_models: {e}")
     
     def test_benchmark_result_dataclass(self):
         """Test BenchmarkResult class structure."""
-        from benchmark_models import BenchmarkResult
+        from scripts.benchmark_models import BenchmarkResult
         
         result = BenchmarkResult(model_name="test-model")
         
@@ -33,7 +33,7 @@ class TestBenchmarkModels(unittest.TestCase):
     
     def test_get_memory_usage(self):
         """Test memory usage monitoring function."""
-        from benchmark_models import get_memory_usage_mb
+        from scripts.benchmark_models import get_memory_usage_mb
         
         memory = get_memory_usage_mb()
         
@@ -42,7 +42,7 @@ class TestBenchmarkModels(unittest.TestCase):
     
     def test_calculate_fact_retention(self):
         """Test fact retention score calculation."""
-        from benchmark_models import calculate_fact_retention
+        from scripts.benchmark_models import calculate_fact_retention
         
         key_concepts = ["Python", "programming", "data science"]
         summary = "Python programming language is used for data science"
@@ -55,7 +55,7 @@ class TestBenchmarkModels(unittest.TestCase):
     
     def test_fact_retention_perfect_match(self):
         """Test fact retention when summary contains all key concepts."""
-        from benchmark_models import calculate_fact_retention
+        from scripts.benchmark_models import calculate_fact_retention
         
         key_concepts = ["machine learning", "artificial intelligence", "data"]
         summary = "machine learning and artificial intelligence uses data"
@@ -67,7 +67,7 @@ class TestBenchmarkModels(unittest.TestCase):
     
     def test_fact_retention_no_match(self):
         """Test fact retention when summary is completely different."""
-        from benchmark_models import calculate_fact_retention
+        from scripts.benchmark_models import calculate_fact_retention
         
         key_concepts = ["machine learning", "artificial intelligence"]
         summary = "cooking recipes and gardening tips"
@@ -79,7 +79,7 @@ class TestBenchmarkModels(unittest.TestCase):
     
     def test_benchmark_result_to_dict(self):
         """Test BenchmarkResult conversion to dictionary."""
-        from benchmark_models import BenchmarkResult
+        from scripts.benchmark_models import BenchmarkResult
         
         result = BenchmarkResult(model_name="test-model")
         result.embedding_latency_ms = 50.0
@@ -102,14 +102,14 @@ class TestBenchmarkSamples(unittest.TestCase):
     
     def test_test_samples_exist(self):
         """Test that TEST_SAMPLES are defined."""
-        from benchmark_models import TEST_SAMPLES
+        from scripts.benchmark_models import TEST_SAMPLES
         
         self.assertIsInstance(TEST_SAMPLES, list)
         self.assertGreater(len(TEST_SAMPLES), 0)
     
     def test_test_samples_structure(self):
         """Test that TEST_SAMPLES have correct structure."""
-        from benchmark_models import TEST_SAMPLES
+        from scripts.benchmark_models import TEST_SAMPLES
         
         for sample in TEST_SAMPLES:
             self.assertIn('id', sample)
@@ -121,7 +121,7 @@ class TestBenchmarkSamples(unittest.TestCase):
     
     def test_test_queries_exist(self):
         """Test that TEST_QUERIES are defined."""
-        from benchmark_models import TEST_QUERIES
+        from scripts.benchmark_models import TEST_QUERIES
         
         self.assertIsInstance(TEST_QUERIES, list)
         self.assertGreater(len(TEST_QUERIES), 0)
@@ -132,7 +132,7 @@ class TestBenchmarkIntegration(unittest.TestCase):
     
     def test_get_local_models(self):
         """Test that get_local_models returns list of models."""
-        from benchmark_models import get_local_models
+        from scripts.benchmark_models import get_local_models
         
         models = get_local_models()
         

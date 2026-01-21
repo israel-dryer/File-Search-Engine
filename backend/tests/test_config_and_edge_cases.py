@@ -17,7 +17,7 @@ class TestConfiguration(unittest.TestCase):
     
     def test_load_config_creates_default(self):
         """Test that load_config creates default config if none exists."""
-        from api import load_config
+        from backend.api import load_config
         
         config = load_config()
         
@@ -26,7 +26,7 @@ class TestConfiguration(unittest.TestCase):
     
     def test_config_sections_exist(self):
         """Test that required config sections exist."""
-        from api import load_config
+        from backend.api import load_config
         
         config = load_config()
         
@@ -39,7 +39,7 @@ class TestConfiguration(unittest.TestCase):
     
     def test_save_config(self):
         """Test saving configuration."""
-        from api import save_config_file
+        from backend.api import save_config_file
         
         config = configparser.ConfigParser()
         config['General'] = {'folder': '/test/path', 'auto_index': 'True'}
@@ -117,7 +117,7 @@ class TestAPIResponseFormats(unittest.TestCase):
     def setUp(self):
         """Set up test client."""
         from fastapi.testclient import TestClient
-        from api import app
+        from backend.api import app
         self.client = TestClient(app)
     
     def test_config_response_format(self):
@@ -171,12 +171,12 @@ class TestErrorHandling(unittest.TestCase):
     def setUp(self):
         """Set up test client."""
         from fastapi.testclient import TestClient
-        from api import app
+        from backend.api import app
         self.client = TestClient(app)
     
     def test_search_without_index(self):
         """Test search returns appropriate error when no index exists."""
-        with patch('api.index', None):
+        with patch('backend.api.index', None):
             response = self.client.post("/api/search", json={"query": "test"})
             
             # Should return 400 when no index

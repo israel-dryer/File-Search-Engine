@@ -102,52 +102,50 @@
 
 /* Cosmic Background - Animated Gradient */
 .bg-cosmic {
-  background: linear-gradient(
-    135deg,
-    hsl(var(--background)) 0%,
-    hsl(240 20% 8%) 50%,
-    hsl(250 30% 12%) 100%
-  );
+  background: linear-gradient(135deg,
+      hsl(var(--background)) 0%,
+      hsl(240 20% 8%) 50%,
+      hsl(250 30% 12%) 100%);
   position: relative;
   overflow: hidden;
 }
 
-.bg-cosmic::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: 
-    radial-gradient(ellipse at 0% 0%, hsla(var(--cosmic-start), 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 0%, hsla(var(--cosmic-mid), 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 100%, hsla(var(--cosmic-end), 0.1) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 50%, hsla(var(--accent), 0.08) 0%, transparent 40%);
-  pointer-events: none;
-  z-index: 0;
-  animation: cosmic-pulse 12s ease-in-out infinite alternate;
-}
+/* Dynamic background managed by CosmicBackground.jsx */
+/* Legacy radial gradients removed */
 
 @keyframes cosmic-pulse {
-  0% { opacity: 0.8; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.02); }
-  100% { opacity: 0.8; transform: scale(1); }
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
 }
 
 /* Glass Card - Primary */
 .glass-card {
-  background: hsla(var(--card), 0.6);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  border: 1px solid hsla(var(--border), 0.4);
-  box-shadow: 
-    0 8px 32px hsla(0 0% 0% / 0.12),
-    inset 0 1px 0 hsla(255 255 255 / 0.05);
+  background: hsla(var(--card), 0.3);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid hsla(var(--border), 0.3);
+  box-shadow:
+    0 8px 32px hsla(0 0% 0% / 0.15),
+    inset 0 1px 0 hsla(255 255 255 / 0.1);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
   background: hsla(var(--card), 0.75);
   border-color: hsla(var(--primary), 0.3);
-  box-shadow: 
+  box-shadow:
     0 12px 40px hsla(var(--primary), 0.15),
     0 4px 12px hsla(0 0% 0% / 0.1),
     inset 0 1px 0 hsla(255 255 255 / 0.08);
@@ -156,10 +154,10 @@
 
 /* Glass Navbar */
 .glass-nav {
-  background: hsla(var(--background), 0.7);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border-bottom: 1px solid hsla(var(--border), 0.3);
+  background: hsla(var(--background), 0.5);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid hsla(var(--border), 0.2);
   box-shadow: 0 4px 30px hsla(0 0% 0% / 0.1);
 }
 
@@ -175,7 +173,7 @@
 .glass-input:focus {
   background: hsla(var(--secondary), 0.7);
   border-color: hsla(var(--primary), 0.5);
-  box-shadow: 
+  box-shadow:
     0 0 0 3px hsla(var(--primary), 0.15),
     0 0 20px hsla(var(--primary), 0.2);
   outline: none;
@@ -187,7 +185,7 @@
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   border: 1px solid hsla(var(--border), 0.3);
-  box-shadow: 
+  box-shadow:
     0 25px 50px -12px hsla(0 0% 0% / 0.25),
     inset 0 1px 0 hsla(255 255 255 / 0.05);
 }
@@ -235,25 +233,35 @@
 
 /* Shimmer Animation */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .shimmer {
-  background: linear-gradient(
-    90deg,
-    hsla(var(--primary), 0) 0%,
-    hsla(var(--primary), 0.3) 50%,
-    hsla(var(--primary), 0) 100%
-  );
+  background: linear-gradient(90deg,
+      hsla(var(--primary), 0) 0%,
+      hsla(var(--primary), 0.3) 50%,
+      hsla(var(--primary), 0) 100%);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
 
 /* Floating Animation */
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 .animate-float {
@@ -279,10 +287,23 @@
 }
 
 @keyframes particle-float {
-  0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-  10% { opacity: 0.6; }
-  90% { opacity: 0.6; }
-  100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+  0% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.6;
+  }
+
+  90% {
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translateY(-100vh) rotate(720deg);
+    opacity: 0;
+  }
 }
 
 /* Premium Scrollbar */
@@ -306,15 +327,13 @@
 
 /* AI Insights Panel */
 .ai-panel {
-  background: linear-gradient(
-    180deg,
-    hsla(var(--card), 0.8) 0%,
-    hsla(var(--card), 0.6) 100%
-  );
+  background: linear-gradient(180deg,
+      hsla(var(--card), 0.8) 0%,
+      hsla(var(--card), 0.6) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid hsla(var(--primary), 0.2);
-  box-shadow: 
+  box-shadow:
     0 0 40px hsla(var(--primary), 0.1),
     inset 0 1px 0 hsla(255 255 255 / 0.05);
 }
@@ -347,12 +366,10 @@
 /* Section Divider */
 .cosmic-divider {
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    hsla(var(--primary), 0.3) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      hsla(var(--primary), 0.3) 50%,
+      transparent 100%);
 }
 
 /* Progress Bar Glow */

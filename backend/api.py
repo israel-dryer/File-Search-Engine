@@ -30,7 +30,7 @@ app = FastAPI()
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:5175"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:5175", "http://localhost:5174"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -329,6 +329,7 @@ async def search_files(request: SearchRequest):
             api_key = config.get('APIKeys', 'anthropic_api_key', fallback=None)
         elif provider == 'grok':
             api_key = config.get('APIKeys', 'grok_api_key', fallback=None)
+        model_path = config.get('LocalLLM', 'model_path', fallback=None)
         from backend.llm_integration import cached_smart_summary, cached_generate_ai_answer, summarize
 
         # Run Search

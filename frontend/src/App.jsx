@@ -145,7 +145,7 @@ function App() {
     };
 
     return (
-        <div className="min-h-screen bg-cosmic text-foreground selection:bg-primary/20 relative">
+        <div className="min-h-screen text-foreground selection:bg-primary/20 relative">
             <CosmicBackground />
             <Header
                 darkMode={darkMode}
@@ -166,7 +166,7 @@ function App() {
                 isMobile={isMobile}
             />
 
-            <main className={`container mx-auto pb-16 min-h-[calc(100vh-3.5rem)] flex flex-col transition-all duration-300 ease-in-out ${isHistoryOpen && !isMobile ? 'pl-72' : ''}`}>
+            <main className={`relative z-10 container mx-auto pb-16 min-h-[calc(100vh-3.5rem)] flex flex-col transition-all duration-300 ease-in-out ${isHistoryOpen && !isMobile ? 'pl-72' : ''}`}>
                 <div className={`flex-1 flex flex-col items-center w-full max-w-3xl mx-auto px-4 ${hasSearched ? 'pt-8' : 'justify-center'}`}>
 
                     {!hasSearched && (

@@ -105,8 +105,8 @@ async function main() {
     // Detect Python executable (check for venv)
     const isWin = process.platform === 'win32';
     const venvPython = isWin
-        ? path.join(__dirname, '..', 'venv', 'Scripts', 'python.exe')
-        : path.join(__dirname, '..', 'venv', 'bin', 'python');
+        ? path.join(__dirname, '..', 'venv_new', 'Scripts', 'python.exe')
+        : path.join(__dirname, '..', 'venv_new', 'bin', 'python');
 
     const fs = require('fs');
     const pythonExe = fs.existsSync(venvPython) ? venvPython : 'python';

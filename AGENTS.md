@@ -305,6 +305,13 @@ python scripts/verify_golden_set.py
 
 > **CRITICAL: Add entry here after EVERY change with date, description, and files.**
 
+### 2026-01-21 (Startup Fixes)
+- **Fixed virtual environment issues** - Created `venv_new` to bypass file lock issues
+  - Updated `package.json` and `scripts/start_all.js` to use `venv_new`
+  - Added `venv_new/` to `.gitignore`
+- **Pinned missing dependencies** - Added `scikit-learn==1.8.0` and `rank-bm25==0.2.2` to `requirements.txt`
+  - Files: `requirements.txt`, `.gitignore`, `package.json`, `scripts/start_all.js`
+
 ### 2026-01-21
 - **Implemented Persistent AI Response Cache** - SQLite-backed caching for instant repeated queries
   - **Database**: Added `response_cache` table to `metadata.db` with query/context hashing

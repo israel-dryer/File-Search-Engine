@@ -28,3 +28,6 @@ openpyxl==3.1.5
 # Utilities
 psutil==6.1.1
 watchdog
+
+scikit-learn==1.8.0
+rank-bm25==0.2.2

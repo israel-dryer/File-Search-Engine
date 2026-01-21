@@ -80,6 +80,16 @@ def init_database():
             UNIQUE(query_hash, context_hash, model_id, response_type)
         )
     """)
+
+    # Clusters table (RAPTOR)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS clusters (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            summary TEXT NOT NULL,
+            level INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     
     # Index for fast cache lookups
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_cache_lookup ON response_cache(query_hash, model_id)")
@@ -404,4 +414,45 @@ def get_cache_stats():
         return {"total_entries": 0, "total_hits": 0}
     finally:
         conn.close()
+
+# -----------------------------------------------------------------------------
+# Cluster Functions (RAPTOR)
+# -----------------------------------------------------------------------------
+
+def add_cluster(summary: str, level: int) -> int:
+    """Add a cluster summary to the database."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        INSERT INTO clusters (summary, level)
+        VALUES (?, ?)
+    """, (summary, level))
+    
+    cluster_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return cluster_id
+
+def get_clusters_by_level(level: int) -> List[Dict]:
+    """Get all clusters at a specific level."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM clusters WHERE level = ?", (level,))
+    clusters = [dict(row) for row in cursor.fetchall()]
+    
+    conn.close()
+    return clusters
+
+def clear_clusters():
+    """Clear all clusters from the database."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("DELETE FROM clusters")
+    
+    conn.commit()
+    conn.close()
+
 

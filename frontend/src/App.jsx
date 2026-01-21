@@ -6,6 +6,7 @@ import SearchHistory from './components/SearchHistory';
 import SettingsModal from './components/SettingsModal';
 import AbstractBackground from './components/AbstractBackground';
 import AnimatedText from './components/AnimatedText';
+import AgentChat from './components/AgentChat';
 import axios from 'axios';
 import { History, Sparkles } from 'lucide-react';
 
@@ -22,6 +23,8 @@ function App() {
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [folders, setFolders] = useState([]);
     const [indexingStatus, setIndexingStatus] = useState({ running: false, progress: 0 });
+    const [isAgentMode, setIsAgentMode] = useState(false);
+    const [agentQuery, setAgentQuery] = useState("");
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -118,9 +121,15 @@ function App() {
     }, [darkMode]);
 
     const handleSearch = async (query) => {
-        setIsLoading(true);
         setHasSearched(true);
         setIsHistoryOpen(false);
+
+        if (isAgentMode) {
+            setAgentQuery(query);
+            return;
+        }
+
+        setIsLoading(true);
         setAiAnswer(""); // Reset previous answer
         setSearchResults([]); // Clear previous results
         try {
@@ -205,10 +214,19 @@ function App() {
                     )}
 
                     <div className={`w-full transition-all duration-500 ${hasSearched ? '' : 'animate-float'}`} style={{ animationDelay: '0.5s' }}>
-                        <SearchBar onSearch={handleSearch} isLoading={isLoading} />
+                        <SearchBar
+                            onSearch={handleSearch}
+                            isLoading={isLoading}
+                            isAgentMode={isAgentMode}
+                            onToggleAgent={() => setIsAgentMode(!isAgentMode)}
+                        />
                     </div>
 
-                    <SearchResults results={searchResults} aiAnswer={aiAnswer} />
+                    {isAgentMode && agentQuery ? (
+                        <AgentChat query={agentQuery} />
+                    ) : (
+                        <SearchResults results={searchResults} aiAnswer={aiAnswer} />
+                    )}
                 </div>
             </main>
 

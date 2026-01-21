@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Bot, Brain } from 'lucide-react';
 
-const SearchBar = ({ onSearch, isLoading }) => {
+const SearchBar = ({ onSearch, isLoading, isAgentMode, onToggleAgent }) => {
     const [query, setQuery] = useState('');
     const [isFocused, setIsFocused] = useState(false);
 
@@ -17,21 +17,27 @@ const SearchBar = ({ onSearch, isLoading }) => {
             <form onSubmit={handleSubmit} className="transform-gpu transition-all duration-300">
                 <div
                     className={`relative flex items-center glass-v2 rounded-2xl border transition-all duration-300 shadow-2xl ${isFocused
-                            ? 'border-primary ring-4 ring-primary/10 -translate-y-2 scale-[1.02] shadow-primary/20'
-                            : 'border-border'
+                        ? 'border-primary ring-4 ring-primary/10 -translate-y-2 scale-[1.02] shadow-primary/20'
+                        : 'border-border'
                         }`}
                 >
                     <div className="pl-5 flex items-center text-primary/60">
-                        {isLoading ? (
-                            <Loader2 className="w-6 h-6 animate-spin" />
+                        <Loader2 className="w-6 h-6 animate-spin" />
                         ) : (
-                            <Search className="w-6 h-6" />
+                        <button
+                            type="button"
+                            onClick={onToggleAgent}
+                            className={`transition-all duration-300 hover:scale-110 ${isAgentMode ? 'text-blue-500' : 'text-primary/60'}`}
+                            title={isAgentMode ? "Switch to Standard Search" : "Switch to AI Agent Mode"}
+                        >
+                            {isAgentMode ? <Brain className="w-7 h-7" /> : <Search className="w-6 h-6" />}
+                        </button>
                         )}
                     </div>
                     <input
                         type="text"
                         className="w-full bg-transparent py-4 pl-3 pr-4 text-lg font-medium placeholder:text-muted-foreground focus:outline-none"
-                        placeholder="What are you looking for?"
+                        placeholder={isAgentMode ? "Ask the AI Researcher a complex question..." : "What are you looking for?"}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onFocus={() => setIsFocused(true)}

@@ -1,4 +1,7 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
+import json
+import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -37,6 +40,10 @@ app.add_middleware(
 index = None
 docs = []
 tags = []
+index_summaries = None
+cluster_summaries = []
+cluster_map = None
+bm25 = None
 
 def load_config():
     if not os.path.exists(CONFIG_PATH):
@@ -65,21 +72,27 @@ async def startup_event():
     if config.get('LocalLLM', 'provider') == 'local':
         model_path = config.get('LocalLLM', 'model_path')
         if model_path and os.path.exists(model_path):
-            print(f"Warming up local model: {model_path}...")
-            # Run in background to not block startup
-            # But here we want it ready, so we might just trigger the load
+            import threading
             from backend.llm_integration import warmup_local_model
-            warmup_local_model(model_path)
-    global index, docs, tags
+            
+            print(f"Triggering background warmup for local model: {model_path}...")
+            # Run in a separate thread so we don't block startup
+            warmup_thread = threading.Thread(target=warmup_local_model, args=(model_path,), daemon=True)
+            warmup_thread.start()
+    global index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25
     if os.path.exists(INDEX_PATH):
         try:
-            index, docs, tags = load_index(INDEX_PATH)
+            index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25 = load_index(INDEX_PATH)
             print("Loaded existing index.")
         except Exception as e:
             print(f"Error loading index: {e}")
             index = None
             docs = []
             tags = []
+            index_summaries = None
+            cluster_summaries = []
+            cluster_map = None
+            bm25 = None
 
 @app.get("/api/browse")
 async def browse_folder():
@@ -296,10 +309,9 @@ async def update_config(config_data: ConfigModel):
 
 @app.post("/api/search", response_model=SearchResponse)
 async def search_files(request: SearchRequest):
-    global index, docs, tags
+    global index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25
     
-    if not index:
-        raise HTTPException(status_code=400, detail="Index not loaded. Please configure and index a folder first.")
+    if not index:        raise HTTPException(status_code=400, detail="Index not loaded. Please configure and index a folder first.")
 
     try:
         start_time = time.time()
@@ -319,6 +331,21 @@ async def search_files(request: SearchRequest):
             api_key = config.get('APIKeys', 'grok_api_key', fallback=None)
         from backend.llm_integration import cached_smart_summary, cached_generate_ai_answer, summarize
 
+        # Run Search
+        results, context_snippets = search(
+            request.query, index, docs, tags, 
+            get_embeddings(provider, api_key, model_path),
+            index_summaries, cluster_summaries, cluster_map, bm25
+        )
+        
+        processed_results = []
+        
+        # Helper to get full file path
+        # Note: search() now returns a list of result dicts directly
+        # We need to adapt the caching logic below
+        
+        # Wait, the previous logic was:
+        # results = search(...) -> returns list of dicts
         for idx, result in enumerate(results):
             # Get file info FIRST so we can pass it to smart_summary
             faiss_idx = result.get('faiss_idx')
@@ -548,21 +575,64 @@ def indexing_progress_callback(current, total, filename):
     indexing_status["current_file"] = filename
     indexing_status["progress"] = int((current / total) * 100)
 
+@app.get("/api/agent/chat")
+async def agent_chat(query: str):
+    """
+    Stream agent thoughts and final answer.
+    """
+    global index, docs, tags, index_summaries, cluster_summaries, cluster_map
+    
+    # Check index
+    if not index:
+        # We can't use HTTPException in streaming response easily, yield error
+        async def yield_error():
+             yield f"data: {json.dumps({'type': 'error', 'content': 'Index not loaded'})}\n\n"
+        return StreamingResponse(yield_error(), media_type="text/event-stream")
+
+    # Construct global state for the agent
+    config = load_config()
+    global_state = {
+        'index': index,
+        'docs': docs,
+        'tags': tags,
+        'index_summaries': index_summaries,
+        'cluster_summaries': cluster_summaries,
+        'cluster_map': cluster_map,
+        'bm25': bm25,
+        'config': config
+    }
+    
+    from backend.agent import ReActAgent
+    agent = ReActAgent(global_state)
+    
+    async def event_generator():
+        try:
+            async for event in agent.stream_chat(query):
+                yield f"data: {json.dumps(event)}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+            
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
 def run_indexing(config, folders):
-    global index, docs, tags, indexing_status
+    global index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25, indexing_status
     
     provider = config.get('LocalLLM', 'provider', fallback='openai')
     api_key = config.get('APIKeys', 'openai_api_key', fallback=None)
     model_path = config.get('LocalLLM', 'model_path', fallback=None)
     
     try:
-        new_index, new_docs, new_tags = create_index(
+        # Unpack 7 values
+        new_index, new_docs, new_tags, new_summ_index, new_summ_docs, new_cluster_map, new_bm25 = create_index(
             folders, provider, api_key, model_path, 
             progress_callback=indexing_progress_callback
         )
         if new_index:
-            save_index(new_index, new_docs, new_tags, INDEX_PATH)
+            save_index(new_index, new_docs, new_tags, INDEX_PATH, new_summ_index, new_summ_docs, new_cluster_map, new_bm25)
             index, docs, tags = new_index, new_docs, new_tags
+            index_summaries, cluster_summaries, cluster_map = new_summ_index, new_summ_docs, new_cluster_map
+            bm25 = new_bm25
+            
             print("Indexing completed successfully.")
             indexing_status["running"] = False
             indexing_status["progress"] = 100

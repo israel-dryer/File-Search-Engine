@@ -206,6 +206,8 @@ describe('Component', () => {
 | DELETE | `/api/models` | Delete model |
 | POST | `/api/benchmarks/run` | Run benchmarks |
 | GET | `/api/benchmarks/results` | Get results |
+| GET | `/api/cache/stats` | Get AI response cache stats |
+| POST | `/api/cache/clear` | Clear AI response cache |
 
 ## Common Tasks
 
@@ -280,6 +282,23 @@ When working on file processing tasks, consult the relevant skill documentation:
 4. **Check existing patterns** before implementing
 5. **Update Change Log** after every modification
 
+## Golden Dataset (Testing)
+
+A standardized "Golden Dataset" is available for verifying retrieval accuracy across different file types.
+
+**Location**: `data/golden_dataset/`
+
+**Scripts**:
+*   `python scripts/create_golden_dataset.py`: Generates synthetic files (PDF, DOCX, XLSX, PPTX) and downloads real-world samples.
+*   `python scripts/verify_golden_set.py`: Indexes the dataset and runs "needle-in-a-haystack" queries to verify accuracy.
+
+**Usage**:
+Run this before major releases to ensure core functionality works:
+```bash
+python scripts/create_golden_dataset.py
+python scripts/verify_golden_set.py
+```
+
 ---
 
 ## Change Log
@@ -287,6 +306,14 @@ When working on file processing tasks, consult the relevant skill documentation:
 > **CRITICAL: Add entry here after EVERY change with date, description, and files.**
 
 ### 2026-01-21
+- **Implemented Persistent AI Response Cache** - SQLite-backed caching for instant repeated queries
+  - **Database**: Added `response_cache` table to `metadata.db` with query/context hashing
+  - **Logic**: Implemented `compute_cache_key`, `cached_smart_summary`, `cached_generate_ai_answer`
+  - **Performance**: Added model warmup on startup (background thread) to eliminate first-query delay
+  - **UI**: Added "AI Response Cache" stats and "Clear Cache" button in Settings
+  - **Endpoints**: Added `/api/cache/stats` and `/api/cache/clear`
+  - Files: `backend/database.py`, `backend/llm_integration.py`, `backend/api.py`, `frontend/src/components/SettingsModal.jsx`
+  - Tests: `backend/tests/test_cache.py` (New)
 - **Reorganized project into clean folder structure** - Better separation of concerns
   - `backend/`: All Python modules (api.py, database.py, indexing.py, etc.)
   - `backend/tests/`: All pytest tests (moved from root tests/)
@@ -322,6 +349,16 @@ When working on file processing tasks, consult the relevant skill documentation:
   - Updated `test_database.py` to use module-level database setup for proper isolation
   - Added "Clear All" button and individual delete buttons to folder history dropdown in Settings UI
   - Files: `backend/database.py`, `backend/api.py`, `backend/tests/test_database.py`, `frontend/src/components/SettingsModal.jsx`
+- **Fixed File Locks** - Database initialization moved to startup event to prevent lock issues during tests
+
+### 2026-01-21 (Part 2)
+- **Restored 100% Test Coverage** - Added tests for new RAPTOR DB functions
+  - `backend/tests/test_raptor_clusters.py`: Covered `add_cluster`, `get_clusters_by_level`, `clear_clusters`
+- **Created "Golden Dataset" for robust testing** - Mixed Stategy (Synthetic + Real)
+  - `scripts/create_golden_dataset.py`: Python script to generate synthetic PDF/DOCX/PPTX/XLSX handling diverse topics (Nature, Business, Sales) and download real-world samples.
+  - `scripts/verify_golden_set.py`: Automated verification script that indexes the golden set and asserts specific factual retrieval ("needle in haystack").
+  - `data/golden_dataset/`: Target directory for test files.
+  - Added documentation to `AGENTS.md`.
 
 ### 2026-01-09
 - **Enhanced LLM output quality** - AI now references filenames and quotes specific content
@@ -334,20 +371,6 @@ When working on file processing tasks, consult the relevant skill documentation:
   - `tests/test_api.py`, `test_database.py`, `test_llm_integration_full.py`, `test_indexing.py`, `test_config_and_edge_cases.py`
   - `frontend/src/test/SearchBar.test.jsx`, `SearchResults.test.jsx`, `SettingsModal.test.jsx`, `ModelManager.test.jsx`
 - **Created AGENTS.md** - Workspace instructions
-
-### 2026-01-21
-- **Implemented Persistent AI Response Cache** - SQLite-backed caching for instant repeated queries
-  - **Database**: Added `response_cache` table to `metadata.db` with query/context hashing
-  - **Logic**: Implemented `compute_cache_key`, `cached_smart_summary`, `cached_generate_ai_answer`
-  - **Performance**: Added model warmup on startup to eliminate first-query delay
-  - **UI**: Added "AI Response Cache" stats and "Clear Cache" button in Settings
-  - **Endpoints**: Added `/api/cache/stats` and `/api/cache/clear`
-  - Files: `backend/database.py`, `backend/llm_integration.py`, `backend/api.py`, `frontend/src/components/SettingsModal.jsx`
-  - Tests: `backend/tests/test_cache.py` (New)
-- **Folder Restructure Complete** - Backend files moved to `backend/`, scripts to `scripts/`, data to `data/`
-- **Updated Imports** - All modules now use absolute `backend.` imports
-- **Fixed File Locks** - Database initialization moved to startup event to prevent lock issues during tests
-- Files: `backend/*`, `scripts/*`, `package.json`, `AGENTS.md`
 
 ### Entry Template
 ```

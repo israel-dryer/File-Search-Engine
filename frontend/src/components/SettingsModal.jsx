@@ -28,6 +28,7 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
     const [expandedSection, setExpandedSection] = useState(null);
     const [folderHistory, setFolderHistory] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
+    const [cacheStats, setCacheStats] = useState({ total_entries: 0, total_hits: 0 });
 
     useEffect(() => {
         if (isOpen) {
@@ -47,6 +48,7 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
     useEffect(() => {
         if (isOpen) {
             fetchFolderHistory();
+            fetchCacheStats();
         }
     }, [isOpen]);
 
@@ -74,6 +76,15 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
             setFolderHistory(response.data || []);
         } catch (error) {
             console.error('Failed to fetch folder history:', error);
+        }
+    };
+
+    const fetchCacheStats = async () => {
+        try {
+            const response = await axios.get('http://localhost:8000/api/cache/stats');
+            setCacheStats(response.data);
+        } catch (error) {
+            console.error('Failed to fetch cache stats:', error);
         }
     };
 
@@ -177,6 +188,18 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                 alert('History cleared!');
             } catch (error) {
                 console.error('Failed to clear history:', error);
+            }
+        }
+    };
+
+    const handleClearCache = async () => {
+        if (confirm('Clear all AI response cache? This will reset the learning.')) {
+            try {
+                await axios.post('http://localhost:8000/api/cache/clear');
+                await fetchCacheStats();
+                alert('Cache cleared!');
+            } catch (error) {
+                console.error('Failed to clear cache:', error);
             }
         }
     };
@@ -468,6 +491,25 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                             Data Management
                         </h3>
+
+                        {/* Cache Stats */}
+                        <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-card/50">
+                            <div>
+                                <div className="text-sm font-semibold flex items-center gap-2">
+                                    <span className="text-primary">⚡</span> AI Response Cache
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                    {cacheStats.total_entries} entries • {cacheStats.total_hits} hits saved
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleClearCache}
+                                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                            >
+                                Clear Cache
+                            </button>
+                        </div>
+
                         <button
                             onClick={handleDeleteAllHistory}
                             className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"

@@ -2,24 +2,58 @@ import unittest
 import tempfile
 import os
 import numpy as np
-import pickle
-from unittest.mock import patch, MagicMock
+import shutil
+from unittest.mock import patch, MagicMock, call
 from backend.indexing import create_index, save_index, load_index
+
+class MockFuture:
+    def __init__(self, result):
+        self._result = result
+    def result(self, timeout=None):
+        return self._result
+
+class MockExecutor:
+    """A synchronous executor for testing."""
+    def __init__(self, *args, **kwargs):
+        pass
+    def __enter__(self):
+        return self
+    def __exit__(self, *args):
+        pass
+    def submit(self, fn, *args, **kwargs):
+        return MockFuture(fn(*args, **kwargs))
+    def map(self, fn, *iterables):
+        return [fn(*args) for args in zip(*iterables)]
 
 
 class TestIndexing(unittest.TestCase):
     """Test cases for indexing module"""
 
     def setUp(self):
-        """Set up test fixtures before each test method."""
+        """Set up test environment before each test method."""
         self.temp_dir = tempfile.mkdtemp()
-        self.test_folder = os.path.join(self.temp_dir, "test_folder")
-        os.makedirs(self.test_folder, exist_ok=True)
+        self.test_folder = self.temp_dir
         
-        # Create a test file
+        # Create a dummy file
         self.test_file = os.path.join(self.test_folder, "test.txt")
-        with open(self.test_file, 'w') as f:
-            f.write("This is test content for indexing.")
+        with open(self.test_file, "w") as f:
+            f.write("This is a test document content for indexing.")
+            
+        # Global patches for executors to make tests synchronous and mock-friendly
+        self.pp_patcher = patch('concurrent.futures.ProcessPoolExecutor', side_effect=MockExecutor)
+        self.tp_patcher = patch('concurrent.futures.ThreadPoolExecutor', side_effect=MockExecutor)
+        self.ac_patcher = patch('concurrent.futures.as_completed', side_effect=lambda fs: fs)
+        self.pp_patcher.start()
+        self.tp_patcher.start()
+        self.ac_patcher.start()
+
+    def tearDown(self):
+        """Clean up after each test method."""
+        self.pp_patcher.stop()
+        self.tp_patcher.stop()
+        self.ac_patcher.stop()
+        if os.path.exists(self.temp_dir):
+            shutil.rmtree(self.temp_dir)
     
     @patch('backend.indexing.get_embeddings')
     @patch('backend.indexing.extract_text')
@@ -33,8 +67,9 @@ class TestIndexing(unittest.TestCase):
         mock_embeddings_model.embed_documents.return_value = [[0.1, 0.2, 0.3]]
         mock_get_embeddings.return_value = mock_embeddings_model
         
-        # Mock the get_tags function
-        with patch('backend.indexing.get_tags', return_value="test, indexing"):
+        # Mock the get_tags and cluster_and_summarize functions
+        with patch('backend.indexing.get_tags', return_value="test, indexing"), \
+             patch('backend.indexing.cluster_and_summarize', return_value=([], [], {})):
             res = create_index(self.test_folder, "openai", "fake_api_key")
             index, docs, tags, idx_sum, clus_sum, clus_map, bm25 = res
             
@@ -57,7 +92,8 @@ class TestIndexing(unittest.TestCase):
         mock_embeddings_model = MagicMock()
         mock_get_embeddings.return_value = mock_embeddings_model
         
-        with patch('backend.indexing.get_tags', return_value=""):
+        with patch('backend.indexing.get_tags', return_value=""), \
+             patch('backend.indexing.cluster_and_summarize', return_value=([], [], {})):
             res = create_index(empty_folder, "openai", "fake_api_key")
             index, docs, tags, idx_sum, clus_sum, clus_map, bm25 = res
             
@@ -97,13 +133,17 @@ class TestIndexing(unittest.TestCase):
         self.assertEqual(loaded_tags, tags)
     
     @patch('faiss.read_index')
+    @patch('os.path.exists')
     @patch('builtins.open')
     @patch('pickle.load')
-    def test_load_index(self, mock_pickle_load, mock_open, mock_read_index):
+    def test_load_index(self, mock_pickle_load, mock_open, mock_exists, mock_read_index):
         """Test loading an index."""
         # Mock the index reading
         mock_faiss_index = MagicMock()
         mock_read_index.return_value = mock_faiss_index
+        
+        # Mock os.path.exists: True for main file, False for others
+        mock_exists.side_effect = lambda path: path == index_path
         
         # Mock pickle loading
         mock_pickle_load.side_effect = [

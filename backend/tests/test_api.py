@@ -10,9 +10,7 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from backend.api import app
 
-# Global patch to prevent database initialization during API tests
-# This avoids file locking issues with the running application
-patch('backend.database.init_database').start()
+# We will use class-level or method-level patches instead of global ones to avoid inter-test pollution
 
 
 class TestAPIConfig(unittest.TestCase):

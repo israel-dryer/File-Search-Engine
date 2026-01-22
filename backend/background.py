@@ -1,7 +1,7 @@
 import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from indexing import create_index, save_index
+from backend.indexing import create_index, save_index
 import configparser
 
 class IndexingEventHandler(FileSystemEventHandler):
@@ -23,9 +23,10 @@ class IndexingEventHandler(FileSystemEventHandler):
 
     def update_index(self):
         print("Change detected, updating index...")
-        index, docs, tags = create_index(self.folder, self.provider, self.api_key, self.model_path)
+        res = create_index(self.folder, self.provider, self.api_key, self.model_path)
+        index, docs, tags, idx_sum, clus_sum, clus_map, bm25 = res
         if index:
-            save_index(index, docs, tags, 'index.faiss')
+            save_index(index, docs, tags, 'index.faiss', idx_sum, clus_sum, clus_map, bm25)
             print("Index updated.")
 
 def start_background_indexing():

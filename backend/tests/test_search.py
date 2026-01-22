@@ -30,11 +30,12 @@ class TestSearch(unittest.TestCase):
         
         # Perform search
         query = "test query"
-        results = search(query, index, docs, tags, mock_embeddings_model)
+        results, context = search(query, index, docs, tags, mock_embeddings_model)
         
         # Verify results
-        self.assertEqual(len(results), 3)  # Should return up to 5 results, but we only have 3 docs
+        self.assertEqual(len(results), 3)  # Should return up to 10 results, but we only have 3 docs
         self.assertIsInstance(results, list)
+        self.assertIsInstance(context, list)
         
         # Check structure of each result
         for result in results:
@@ -43,7 +44,7 @@ class TestSearch(unittest.TestCase):
             self.assertIn("tags", result)
             self.assertIsInstance(result["document"], str)
             self.assertIsInstance(result["distance"], (int, float, np.floating))
-            self.assertIsInstance(result["tags"], str)
+            self.assertIsInstance(result["tags"], list)
     
     def test_search_with_more_documents_than_k(self):
         """Test search when there are more documents than k (top results)."""
@@ -71,10 +72,10 @@ class TestSearch(unittest.TestCase):
         
         # Perform search
         query = "test query"
-        results = search(query, index, docs, tags, mock_embeddings_model)
+        results, context = search(query, index, docs, tags, mock_embeddings_model)
         
-        # Should return top 5 results
-        self.assertEqual(len(results), 5)
+        # Should return top 10 results if available, here we have 6 docs
+        self.assertEqual(len(results), 6)
     
     def test_search_with_insufficient_documents(self):
         """Test search when there are fewer documents than requested."""
@@ -95,12 +96,14 @@ class TestSearch(unittest.TestCase):
         
         # Perform search
         query = "test query"
-        results = search(query, index, docs, tags, mock_embeddings_model)
+        results, context = search(query, index, docs, tags, mock_embeddings_model)
         
         # Should return the single document
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["document"], "Single Document")
-        self.assertEqual(results[0]["tags"], "single_tag")
+        # tags_list contains "Semantic" by default in search.py if found in vector search
+        self.assertIn("Semantic", results[0]["tags"])
+        self.assertIn("single_tag", results[0]["tags"])
     
     def test_search_empty_index(self):
         """Test search with an empty index."""
@@ -119,7 +122,7 @@ class TestSearch(unittest.TestCase):
         
         # Perform search
         query = "test query"
-        results = search(query, index, docs, tags, mock_embeddings_model)
+        results, context = search(query, index, docs, tags, mock_embeddings_model)
         
         # Should return empty results
         self.assertEqual(len(results), 0)

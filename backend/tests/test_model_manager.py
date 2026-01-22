@@ -46,7 +46,7 @@ class TestModelManager(unittest.TestCase):
         from backend.model_manager import get_available_models
         
         models = get_available_models()
-        valid_categories = ['small', 'medium', 'large']
+        valid_categories = ['small', 'medium', 'large', 'premium', 'extra-large']
         
         for model in models:
             with self.subTest(model=model['id']):
@@ -128,7 +128,8 @@ class TestModelManagerIntegration(unittest.TestCase):
     
     def setUp(self):
         """Set up test environment."""
-        self.models_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models')
+        from backend.model_manager import MODELS_DIR
+        self.models_dir = MODELS_DIR
     
     def test_models_directory_exists(self):
         """Test that models directory exists."""

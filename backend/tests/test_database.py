@@ -32,11 +32,21 @@ def tearDownModule():
     """Clean up shared temp database."""
     global _shared_temp_dir, _original_db_path
     from backend import database
+    import gc
+    import time
     
-    # Restore original path and clean up
+    # Restore original path
     database.DATABASE_PATH = _original_db_path
+    
+    # Try to close any lingering connections and clean up
+    gc.collect()
+    time.sleep(0.1)  # Small delay to let OS release file handles
+    
     if _shared_temp_dir and os.path.exists(_shared_temp_dir):
-        shutil.rmtree(_shared_temp_dir)
+        try:
+            shutil.rmtree(_shared_temp_dir)
+        except Exception as e:
+            print(f"Warning: Could not clean up test directory {_shared_temp_dir}: {e}")
 
 
 class TestDatabase(unittest.TestCase):

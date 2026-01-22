@@ -10,8 +10,8 @@ class TestBackground(unittest.TestCase):
 
     def test_indexing_event_handler_initialization(self):
         """Test initialization of IndexingEventHandler."""
-        with patch('background.create_index') as mock_create_index:
-            mock_create_index.return_value = (MagicMock(), ["doc1"], ["tag1"])
+        with patch('backend.background.create_index') as mock_create_index:
+            mock_create_index.return_value = (MagicMock(), ["doc1"], ["tag1"], None, None, None, None)
             
             handler = IndexingEventHandler(
                 folder="/test/folder",
@@ -28,12 +28,12 @@ class TestBackground(unittest.TestCase):
             self.assertEqual(handler.api_key, "test_key")
             self.assertIsNone(handler.model_path)
     
-    @patch('background.create_index')
-    @patch('background.save_index')
+    @patch('backend.background.create_index')
+    @patch('backend.background.save_index')
     def test_update_index(self, mock_save_index, mock_create_index):
         """Test the update_index method of IndexingEventHandler."""
         mock_index = MagicMock()
-        mock_create_index.return_value = (mock_index, ["doc1"], ["tag1"])
+        mock_create_index.return_value = (mock_index, ["doc1"], ["tag1"], None, None, None, None)
         
         handler = IndexingEventHandler(
             folder="/test/folder",
@@ -52,13 +52,13 @@ class TestBackground(unittest.TestCase):
         
         # Verify save_index was called
         mock_save_index.assert_called_once_with(
-            mock_index, ["doc1"], ["tag1"], 'index.faiss'
+            mock_index, ["doc1"], ["tag1"], 'index.faiss', None, None, None, None
         )
     
-    @patch('background.create_index')
+    @patch('backend.background.create_index')
     def test_update_index_none_result(self, mock_create_index):
         """Test update_index when create_index returns None."""
-        mock_create_index.return_value = (None, None, None)
+        mock_create_index.return_value = (None, None, None, None, None, None, None)
         
         handler = IndexingEventHandler(
             folder="/test/folder",
@@ -75,12 +75,12 @@ class TestBackground(unittest.TestCase):
             "/test/folder", "openai", "test_key", None
         )
     
-    @patch('background.create_index')
-    @patch('background.save_index')
+    @patch('backend.background.create_index')
+    @patch('backend.background.save_index')
     def test_on_modified_triggers_update(self, mock_save_index, mock_create_index):
         """Test that on_modified event triggers index update."""
         mock_index = MagicMock()
-        mock_create_index.return_value = (mock_index, ["doc1"], ["tag1"])
+        mock_create_index.return_value = (mock_index, ["doc1"], ["tag1"], None, None, None, None)
         
         handler = IndexingEventHandler(
             folder="/test/folder",

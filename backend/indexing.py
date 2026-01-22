@@ -54,7 +54,7 @@ def create_index(folder_paths, provider, api_key=None, model_path=None, progress
     
     print(f"Found {len(all_files)} total files.")
     if not all_files:
-        return None, None, None
+        return None, None, None, None, None, None, None
 
     # 3. Parallel Text Extraction (CPU Bound)
     print("Step 1/5: Extracting Text (Parallel)...")

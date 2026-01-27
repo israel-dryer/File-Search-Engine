@@ -389,11 +389,19 @@ async def search_files(request: SearchRequest):
         # Wait, the previous logic was:
         # results = search(...) -> returns list of dicts
         for idx, result in enumerate(results):
-            # Get file info FIRST so we can pass it to smart_summary
             faiss_idx = result.get('faiss_idx')
-            file_info = database.get_file_by_faiss_index(faiss_idx) if faiss_idx is not None else None
-            file_name = file_info['filename'] if file_info else None
-            file_path = file_info['path'] if file_info else None
+            
+            # Use file info from search result first (it comes from FAISS doc metadata)
+            # Only fall back to database lookup if not available
+            file_path = result.get('file_path')
+            file_name = result.get('file_name')
+            
+            # If not in search result, try database lookup (for backward compatibility)
+            if not file_path and faiss_idx is not None:
+                file_info = database.get_file_by_faiss_index(faiss_idx)
+                if file_info:
+                    file_path = file_info.get('path')
+                    file_name = file_info.get('filename')
             
             # For top 1 results, use CACHED Smart Summary (LLM) if configured
             if idx < 1:
@@ -432,7 +440,10 @@ async def search_files(request: SearchRequest):
             active_model_name = os.path.basename(model_path).replace(".gguf", "").replace("-", " ")
 
         # We try to generate an answer if any provider is configured
-        context_text = "\n\n".join(context_snippets[:4]) # Top 4 results
+        # Use top 6 snippets, truncated to 600 chars each = ~3600 chars total (~900 tokens)
+        # This is safe for 4096 token context windows while providing breadth
+        safe_snippets = [s[:600] for s in context_snippets[:6]]
+        context_text = "\n\n".join(safe_snippets)
         if context_text:
             logger.info(f"Generating answer with {active_model_name}...")
             # We now pass provider and api_key to CACHED generate_ai_answer
@@ -513,8 +524,11 @@ async def open_file(request: dict):
     if not file_path:
         raise HTTPException(status_code=400, detail="File path is required")
     
+    # Normalize path - fix mixed slashes from FAISS metadata
+    file_path = os.path.normpath(file_path)
+    
     if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
     
     try:
         import subprocess

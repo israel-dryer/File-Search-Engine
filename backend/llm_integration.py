@@ -244,9 +244,12 @@ def generate_ai_answer(context, question, provider, api_key=None, model_path=Non
             if not llm:
                 return "Error: Local model failed to load."
 
-            # Truncate context if it's too large for fast local processing
-            if len(context) > 10000:
-                context = context[:10000] + "... [Truncated for speed]"
+            # Truncate context to fit within model's context window
+            # Most local models have 4096 token context. ~4 chars/token.
+            # 10,000 chars is ~2,500 tokens, leaving ample room for prompt (300) and output (512).
+            MAX_CONTEXT_CHARS = 10000
+            if len(context) > MAX_CONTEXT_CHARS:
+                context = context[:MAX_CONTEXT_CHARS] + "... [Truncated to fit context window]"
 
             with _local_llm_lock:
                 output = llm.create_completion(

@@ -496,3 +496,50 @@ def clear_clusters():
     conn.close()
 
 
+def cleanup_test_data() -> Dict[str, int]:
+    """
+    Remove test data from the production database.
+    Cleans up paths that look like test paths (containing /test/, temp directories, etc.)
+    Returns counts of cleaned items.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    counts = {
+        'files': 0,
+        'folders': 0,
+        'search_history': 0
+    }
+    
+    # Patterns that indicate test data
+    test_patterns = [
+        '%/test/%',
+        '%\\test\\%',
+        '%\\Temp\\%',
+        '%/tmp/%',
+        '%/var/folders/%',  # macOS temp
+        '%AppData\\Local\\Temp%',  # Windows temp
+    ]
+    
+    # Clean files table
+    for pattern in test_patterns:
+        cursor.execute("DELETE FROM files WHERE path LIKE ?", (pattern,))
+        counts['files'] += cursor.rowcount
+    
+    # Clean folder_history table  
+    for pattern in test_patterns:
+        cursor.execute("DELETE FROM folder_history WHERE path LIKE ?", (pattern,))
+        counts['folders'] += cursor.rowcount
+    
+    # Clean search_history with test-like queries
+    cursor.execute("DELETE FROM search_history WHERE query LIKE '%test%' OR query LIKE 'delete%' OR query LIKE 'structure%'")
+    counts['search_history'] = cursor.rowcount
+    
+    conn.commit()
+    conn.close()
+    
+    total = sum(counts.values())
+    if total > 0:
+        print(f"[CLEANUP] Removed {counts['files']} test files, {counts['folders']} test folders, {counts['search_history']} test searches")
+    
+    return counts

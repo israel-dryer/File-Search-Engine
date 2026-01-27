@@ -246,6 +246,14 @@ def main():
     # Final status
     if failures == 0 and errors == 0:
         print(f"\n{Colors.GREEN}{Colors.BOLD}✓ ALL TESTS PASSED!{Colors.ENDC}\n")
+        
+        # Cleanup test data from production database
+        try:
+            from backend import database
+            database.cleanup_test_data()
+        except Exception as e:
+            print(f"{Colors.YELLOW}Warning: Could not cleanup test data: {e}{Colors.ENDC}")
+        
         return 0
     else:
         print(f"\n{Colors.RED}{Colors.BOLD}✗ SOME TESTS FAILED{Colors.ENDC}\n")

@@ -16,6 +16,31 @@ def tokenize(text):
     tokens = text.lower().translate(translator).split()
     return [t for t in tokens if t not in STOP_WORDS and len(t) > 1]
 
+def expand_query(query: str) -> str:
+    """
+    Expands query with structural synonyms to bridge the gap between intent and document structure.
+    Example: "work" -> "work experience employment history"
+    """
+    expansion_map = {
+        'work': ['experience', 'employment', 'history', 'role', 'position', 'career'],
+        'job': ['experience', 'employment', 'role', 'position', 'career'],
+        'experience': ['work', 'employment', 'history'],
+        'education': ['university', 'college', 'degree', 'school', 'academic'],
+        'school': ['education', 'university', 'college'],
+        'contact': ['email', 'phone', 'address', 'mobile'],
+        'project': ['portfolio', 'case study', 'demonstration'],
+    }
+    
+    tokens = tokenize(query)
+    expanded_terms = set(tokens)
+    
+    for token in tokens:
+        if token in expansion_map:
+            for synonym in expansion_map[token]:
+                expanded_terms.add(synonym)
+                
+    return " ".join(expanded_terms)
+
 def search(query: str, index, docs: List[Dict], tags: List[str], embeddings_model, 
            index_summaries=None, cluster_summaries=None, cluster_map=None, bm25=None) -> Tuple[List[Dict], List[str]]:
     """
@@ -41,7 +66,10 @@ def search(query: str, index, docs: List[Dict], tags: List[str], embeddings_mode
             
         future_bm25 = None
         if bm25:
-            tokenized_query = tokenize(query)
+            # Expand query for Keyword Search to hit document sections (e.g. "Work" -> "Experience")
+            expanded_query_str = expand_query(query)
+            tokenized_query = tokenize(expanded_query_str)
+            print(f"[SEARCH] Expanded query terms: {tokenized_query}")
             future_bm25 = executor.submit(bm25.get_scores, tokenized_query)
             
         # Process Chunk Results
@@ -93,19 +121,23 @@ def search(query: str, index, docs: List[Dict], tags: List[str], embeddings_mode
         final_scores[idx] += 1 / (k + rank + 1)
 
     # 4. Identity/Exact Match Boost
-    # If a query contains a potential name, boost documents that contain that exact string
-    # This helps distinguish between 'Siddhesh' and 'Siddharth'
-    query_terms = [t for t in tokenize(query) if len(t) > 3]
+    # If a query contains a Capitalized Name (Proper Noun), massively boost documents containing it.
+    # This filters for the specific person/entity requested.
+    query_words = query.split()
+    proper_nouns = [w for w in query_words if w[0].isupper() and len(w) > 2]
+    
     boost_count = 0
-    for idx in final_scores:
-        doc_info = docs[idx]
-        doc_text = doc_info.get('text', "") if isinstance(doc_info, dict) else str(doc_info)
-        doc_text = doc_text.lower()
-        for term in query_terms:
-            if term in doc_text:
-                # Small boost for each matching term from query
-                final_scores[idx] *= 1.1
-                boost_count += 1
+    if proper_nouns:
+        print(f"[SEARCH] Boosting proper nouns: {proper_nouns}")
+        for idx in final_scores:
+            doc_info = docs[idx]
+            doc_text = doc_info.get('text', "") if isinstance(doc_info, dict) else str(doc_info)
+            # Check for exact case match of proper nouns in text
+            for noun in proper_nouns:
+                if noun in doc_text:
+                    # LARGE boost (1.5x) for finding the specific entity (e.g. "Siddhesh")
+                    final_scores[idx] *= 1.5 
+                    boost_count += 1
     
     if boost_count > 0:
         print(f"[SEARCH] Applied Identity Boost to {boost_count} matches.")
@@ -119,23 +151,27 @@ def search(query: str, index, docs: List[Dict], tags: List[str], embeddings_mode
     results = []
     context_snippets = []
     
-    seen_files = {} # path -> count
+    seen_files = set()  # Track seen file paths
+    seen_content_hashes = set()  # Track content hash to avoid near-duplicates
     
     for rank, idx in enumerate(top_indices):
         doc_info = docs[idx]
         doc_text = doc_info.get('text', "") if isinstance(doc_info, dict) else str(doc_info)
         file_path = doc_info.get('filepath', "") if isinstance(doc_info, dict) else None
         
-        # Diversity check: Skip if we already have 2 chunks from this file
-        # unless we are running low on total results
+        # Content hash for near-duplicate detection (first 200 chars)
+        content_hash = hash(doc_text[:200].lower().strip())
+        if content_hash in seen_content_hashes:
+            continue  # Skip near-duplicate content
+        
+        # Diversity: Skip if we already have a result from this file
+        # This ensures variety across different source files
+        if file_path and file_path in seen_files:
+            continue  # One result per file max
+            
         if file_path:
-            count = seen_files.get(file_path, 0)
-            if count >= 2 and len(results) < 5: 
-                 # Soft limit: allow more if we have very few results so far
-                 pass
-            elif count >= 2:
-                 continue # Skip this chunk to show other files
-            seen_files[file_path] = count + 1
+            seen_files.add(file_path)
+        seen_content_hashes.add(content_hash)
         
         file_name = None
         if file_path:

@@ -305,6 +305,26 @@ python scripts/verify_golden_set.py
 
 > **CRITICAL: Add entry here after EVERY change with date, description, and files.**
 
+### 2026-01-28
+- **Fixed Duplicate Search Results & Context Window Overflow**
+  - **fix**: Improved search deduplication to strict "one result per file" + content hashing to eliminate near-duplicates
+  - **fix**: Reduced context truncation from 10000 to 3000 chars to prevent exceeding 4096 token context window on local LLMs
+  - **fix**: Limited AI context snippets from 4 to 2, each capped at 400 chars
+  - **Files**: `backend/search.py`, `backend/llm_integration.py`, `backend/api.py`
+- **Fixed File Path Not Showing in Search Results**
+  - **fix**: Search results now use file_path from FAISS metadata first (instead of failing database lookup)
+  - **Files**: `backend/api.py`
+- **Auto-Cleanup Test Data After Tests**
+  - **feat**: Added `cleanup_test_data()` to `database.py` to remove temp/test paths from production database
+  - **feat**: Test runner now automatically cleans up test data after successful test runs
+- [x] Verification: Test strict query "Where did Siddhesh work" <!-- id: 2 -->
+    - [x] Verified resume retrieved as top 3 results
+    - [x] Verified AI answer synthesize information from multiple files
+- **Expanded AI Context to Multi-File Synthesis**
+  - **feat**: Increased AI context to include top 6 results (up from 2)
+  - **feat**: Increased context truncation limit from 3000 to 10000 chars in `llm_integration.py`
+  - **Files**: `backend/api.py`, `backend/llm_integration.py`
+
 ### 2026-01-27 (Maintenance)
 - **Fixed Dependency & Added Logging** - Resolved explicit dependency error and added full-stack logging
   - **Backend**: Added `sentence-transformers==3.0.1` to `requirements.txt`

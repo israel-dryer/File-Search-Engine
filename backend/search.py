@@ -4,10 +4,17 @@ import concurrent.futures
 from typing import List, Dict, Any, Tuple
 import string
 
+# Optimized stop words list for fast filtering
+STOP_WORDS = {
+    'a', 'an', 'the', 'and', 'or', 'but', 'if', 'then', 'else', 'when', 'at', 'by', 'from', 'for', 'with', 'in', 'on', 'to', 'is', 'am', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'but', 'so', 'up', 'down', 'out', 'off', 'over', 'under', 'again', 'further', 'once', 'here', 'there', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'than', 'too', 'very', 'can', 'will', 'just', 'should', 'now'
+}
+
 def tokenize(text):
-    """Simple tokenization for BM25."""
+    """Refined tokenization for BM25 with stop-word filtering."""
+    if not text: return []
     translator = str.maketrans('', '', string.punctuation)
-    return text.lower().translate(translator).split()
+    tokens = text.lower().translate(translator).split()
+    return [t for t in tokens if t not in STOP_WORDS and len(t) > 1]
 
 def search(query: str, index, docs: List[Dict], tags: List[str], embeddings_model, 
            index_summaries=None, cluster_summaries=None, cluster_map=None, bm25=None) -> Tuple[List[Dict], List[str]]:
@@ -22,13 +29,20 @@ def search(query: str, index, docs: List[Dict], tags: List[str], embeddings_mode
     query_embedding = np.array([embeddings_model.embed_query(query)]).astype('float32')
     
     vector_candidates = {} # idx -> score (distance)
+    keyword_candidates = {} # idx -> score
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        # Start Parallel Tasks
         future_chunks = executor.submit(index.search, query_embedding, 15) # Top 15 direct
         
         future_summaries = None
         if index_summaries:
             future_summaries = executor.submit(index_summaries.search, query_embedding, 3) # Top 3 themes
+            
+        future_bm25 = None
+        if bm25:
+            tokenized_query = tokenize(query)
+            future_bm25 = executor.submit(bm25.get_scores, tokenized_query)
             
         # Process Chunk Results
         dists_c, idxs_c = future_chunks.result()
@@ -36,6 +50,17 @@ def search(query: str, index, docs: List[Dict], tags: List[str], embeddings_mode
             if idx != -1:
                 vector_candidates[int(idx)] = float(dists_c[0][i])
         
+        # Process Keyword Results
+        if future_bm25:
+            try:
+                scores = future_bm25.result()
+                top_n = np.argsort(scores)[::-1][:20]
+                for idx in top_n:
+                    if scores[idx] > 0:
+                        keyword_candidates[int(idx)] = float(scores[idx])
+            except Exception as e:
+                print(f"BM25 Parallel Error: {e}")
+
         # Process Summary -> Expansion
         if future_summaries and cluster_map:
             dists_s, idxs_s = future_summaries.result()
@@ -44,38 +69,16 @@ def search(query: str, index, docs: List[Dict], tags: List[str], embeddings_mode
                     child_indices = cluster_map.get(int(idx), [])
                     for child_idx in child_indices:
                         if child_idx < len(docs):
-                            # Assign a default good score if not found directly? 
-                            # Or just add to candidates for reranking.
-                            # For RRF, we need a rank.
-                            # Expansion strategy: these act as "Semantic Hits"
                             if int(child_idx) not in vector_candidates:
                                 vector_candidates[int(child_idx)] = 100.0 # Placeholder distance
-    
-    # 2. BM25 Search (Keyword)
-    keyword_candidates = {} # idx -> score
-    if bm25:
-        tokenized_query = tokenize(query)
-        # get_scores gives score for every doc. Efficient?
-        # For small local dataset (<100k docs), yes.
-        # For larger, get_top_n is better but we need indices.
-        # bm25.get_scores() returns array in order of corpus.
-        
-        # Optim: If many docs, this might be slow. 
-        # But we are local.
-        try:
-             scores = bm25.get_scores(tokenized_query)
-             # Get top 20 indices
-             top_n = np.argsort(scores)[::-1][:20]
-             for idx in top_n:
-                 if scores[idx] > 0:
-                     keyword_candidates[int(idx)] = float(scores[idx])
-        except Exception as e:
-            print(f"BM25 Error: {e}")
 
     # 3. Reciprocal Rank Fusion (RRF)
     # RRF Score = 1 / (k + rank)
     k = 60
     final_scores = {} # idx -> rrf_score
+
+    print(f"\n[SEARCH] Query: '{query}'")
+    print(f"[SEARCH] Found {len(vector_candidates)} semantic and {len(keyword_candidates)} keyword candidates.")
     
     # Rank Vector Results (Lower distance is better)
     sorted_vector = sorted(vector_candidates.items(), key=lambda x: x[1])
@@ -88,19 +91,51 @@ def search(query: str, index, docs: List[Dict], tags: List[str], embeddings_mode
     for rank, (idx, score) in enumerate(sorted_keyword):
         if idx not in final_scores: final_scores[idx] = 0.0
         final_scores[idx] += 1 / (k + rank + 1)
+
+    # 4. Identity/Exact Match Boost
+    # If a query contains a potential name, boost documents that contain that exact string
+    # This helps distinguish between 'Siddhesh' and 'Siddharth'
+    query_terms = [t for t in tokenize(query) if len(t) > 3]
+    boost_count = 0
+    for idx in final_scores:
+        doc_info = docs[idx]
+        doc_text = doc_info.get('text', "") if isinstance(doc_info, dict) else str(doc_info)
+        doc_text = doc_text.lower()
+        for term in query_terms:
+            if term in doc_text:
+                # Small boost for each matching term from query
+                final_scores[idx] *= 1.1
+                boost_count += 1
+    
+    if boost_count > 0:
+        print(f"[SEARCH] Applied Identity Boost to {boost_count} matches.")
         
-    # Sort by RRF Score (Higher is better)
+    # 5. Sort by RRF Score (Higher is better)
     sorted_final = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
     top_indices = [idx for idx, score in sorted_final[:10]] # Top 10 fused
+    print(f"[SEARCH] Returning top {len(top_indices)} fused results.")
     
     # 4. Format Results
     results = []
     context_snippets = []
     
+    seen_files = {} # path -> count
+    
     for rank, idx in enumerate(top_indices):
         doc_info = docs[idx]
         doc_text = doc_info.get('text', "") if isinstance(doc_info, dict) else str(doc_info)
         file_path = doc_info.get('filepath', "") if isinstance(doc_info, dict) else None
+        
+        # Diversity check: Skip if we already have 2 chunks from this file
+        # unless we are running low on total results
+        if file_path:
+            count = seen_files.get(file_path, 0)
+            if count >= 2 and len(results) < 5: 
+                 # Soft limit: allow more if we have very few results so far
+                 pass
+            elif count >= 2:
+                 continue # Skip this chunk to show other files
+            seen_files[file_path] = count + 1
         
         file_name = None
         if file_path:
@@ -130,4 +165,7 @@ def search(query: str, index, docs: List[Dict], tags: List[str], embeddings_mode
         # Prepare context for AI
         context_snippets.append(doc_text)
         
+        if len(results) >= 10:
+            break
+            
     return results, context_snippets

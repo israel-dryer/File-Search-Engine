@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { X, Settings, FolderOpen, Loader2, Save, ChevronDown, ChevronUp, Key, Cpu, Trash2 } from 'lucide-react';
+import { X, Settings, FolderOpen, Loader2, Save, ChevronDown, ChevronUp, Key, Cpu, Trash2, CheckCircle2 } from 'lucide-react';
 import ModelManager from './ModelManager';
 
 const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
@@ -256,8 +256,20 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                                     style={{ width: `${indexingStatus.progress}%` }}
                                 />
                             </div>
-                            <div className="text-[10px] text-muted-foreground truncate opacity-80">
+                            <div className="text-[10px] text-muted-foreground truncate opacity-80 font-mono mt-1">
                                 {indexingStatus.current_file}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Indexing Error */}
+                    {indexingStatus.error && !indexingStatus.running && (
+                        <div className="p-4 rounded-xl glass-v2 border border-destructive/20 bg-destructive/5 flex items-center gap-3">
+                            <div className="p-2 rounded-full bg-destructive/10 text-destructive">
+                                <X className="w-4 h-4" />
+                            </div>
+                            <div className="text-sm font-medium text-destructive">
+                                {indexingStatus.error}
                             </div>
                         </div>
                     )}
@@ -266,7 +278,7 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                     <section className="space-y-3">
                         <div className="flex justify-between items-center">
                             <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                                Document Folders
+                                Indexed Folders
                             </h3>
                             <button
                                 onClick={handleAddFolder}
@@ -282,17 +294,17 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                                     <button
                                         onClick={() => setShowHistory(!showHistory)}
                                         className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-secondary/20 text-secondary-foreground text-xs font-bold hover:bg-secondary/30 transition-colors ml-2"
-                                        title="Previously used folders"
+                                        title="Previously indexed folders"
                                     >
                                         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                        Recent
+                                        Recently Indexed
                                         {showHistory ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                                     </button>
 
                                     {showHistory && (
                                         <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden">
                                             <div className="p-2 border-b border-border bg-muted/30 flex justify-between items-center">
-                                                <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Recent Folders</h4>
+                                                <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Recently Indexed</h4>
                                                 <button
                                                     onClick={handleClearAllHistory}
                                                     className="text-[10px] text-destructive hover:text-destructive/80 font-medium"
@@ -302,21 +314,23 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                                                 </button>
                                             </div>
                                             <div className="max-h-48 overflow-y-auto py-1">
-                                                {folderHistory.filter(f => !config.folders.includes(f)).length > 0 ? (
-                                                    folderHistory
-                                                        .filter(f => !config.folders.includes(f))
-                                                        .map((folder, idx) => (
+                                                {folderHistory.length > 0 ? (
+                                                    folderHistory.map((folder, idx) => {
+                                                        const isAdded = config.folders.includes(folder);
+                                                        return (
                                                             <div
                                                                 key={idx}
-                                                                className="flex items-center gap-1 px-2 py-1.5 hover:bg-accent group"
+                                                                className={`flex items-center gap-1 px-2 py-1.5 group ${isAdded ? 'opacity-50' : 'hover:bg-accent'}`}
                                                             >
                                                                 <button
-                                                                    onClick={() => handleAddFromHistory(folder)}
+                                                                    onClick={() => !isAdded && handleAddFromHistory(folder)}
+                                                                    disabled={isAdded}
                                                                     className="flex-1 text-left text-xs truncate flex items-center gap-2"
-                                                                    title={`Add: ${folder}`}
+                                                                    title={isAdded ? "Already added" : `Add: ${folder}`}
                                                                 >
                                                                     <FolderOpen className="w-3 h-3 opacity-50 flex-shrink-0" />
                                                                     <span className="truncate">{folder}</span>
+                                                                    {isAdded && <span className="text-[10px] bg-green-500/10 text-green-600 px-1 rounded ml-auto">Added</span>}
                                                                 </button>
                                                                 <button
                                                                     onClick={(e) => handleRemoveFromHistory(folder, e)}
@@ -326,10 +340,11 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                                                                     <Trash2 className="w-3 h-3" />
                                                                 </button>
                                                             </div>
-                                                        ))
+                                                        );
+                                                    })
                                                 ) : (
                                                     <div className="px-3 py-4 text-center text-xs text-muted-foreground italic">
-                                                        No new recent folders
+                                                        No indexed folders found
                                                     </div>
                                                 )}
                                             </div>
@@ -343,7 +358,10 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                             {config.folders.length > 0 ? (
                                 config.folders.map((folder, idx) => (
                                     <div key={idx} className="flex items-center gap-2 group p-2 rounded-lg border border-border bg-card/50">
-                                        <div className="flex-1 min-w-0">
+                                        <div className="flex-1 min-w-0 flex items-center gap-2">
+                                            <div className="p-1 rounded-full bg-green-500/10 text-green-500">
+                                                <CheckCircle2 className="w-3 h-3" />
+                                            </div>
                                             <p className="text-xs font-medium truncate opacity-80">{folder}</p>
                                         </div>
                                         <button

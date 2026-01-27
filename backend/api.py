@@ -10,12 +10,6 @@ import os
 import configparser
 import tkinter as tk
 from tkinter import filedialog
-from backend.indexing import create_index, save_index, load_index
-from backend.search import search
-from backend.llm_integration import summarize, get_embeddings, generate_ai_answer
-from backend.file_processing import extract_text
-from backend.model_manager import get_available_models, get_local_models, start_download, get_download_status
-from backend import database
 import time
 
 # Path configuration for new folder structure
@@ -24,6 +18,29 @@ DATA_DIR = os.path.join(BASE_DIR, 'data')
 CONFIG_PATH = os.path.join(BASE_DIR, 'config.ini')
 INDEX_PATH = os.path.join(DATA_DIR, 'index.faiss')
 BENCHMARK_PATH = os.path.join(DATA_DIR, 'benchmark_results.json')
+LOG_PATH = os.path.join(DATA_DIR, 'app.log')
+
+# Configure logging FIRST
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - [%(levelname)s] - %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_PATH),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+logger.info("--- SERVER RESTARTING (Logging Configured Early) ---")
+
+from backend.indexing import create_index, save_index, load_index
+from backend.search import search
+from backend.llm_integration import summarize, get_embeddings, generate_ai_answer
+from backend.file_processing import extract_text
+from backend.model_manager import get_available_models, get_local_models, start_download, get_download_status
+from backend import database
+
+
 
 app = FastAPI()
 
@@ -45,6 +62,14 @@ cluster_summaries = []
 cluster_map = None
 bm25 = None
 
+@app.get("/")
+async def root():
+    return {"status": "online", "message": "File Search Engine API is running"}
+
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok"}
+
 def load_config():
     if not os.path.exists(CONFIG_PATH):
         config = configparser.ConfigParser()
@@ -65,20 +90,9 @@ def save_config_file(config):
 # Initialize index on startup if available
 @app.on_event("startup")
 async def startup_event():
+    logger.info("Application starting up...")
     database.init_database()
     
-    # Warmup local model if configured
-    config = load_config()
-    if config.get('LocalLLM', 'provider') == 'local':
-        model_path = config.get('LocalLLM', 'model_path')
-        if model_path and os.path.exists(model_path):
-            import threading
-            from backend.llm_integration import warmup_local_model
-            
-            print(f"Triggering background warmup for local model: {model_path}...")
-            # Run in a separate thread so we don't block startup
-            warmup_thread = threading.Thread(target=warmup_local_model, args=(model_path,), daemon=True)
-            warmup_thread.start()
     global index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25
     if os.path.exists(INDEX_PATH):
         try:
@@ -258,6 +272,7 @@ class ConfigModel(BaseModel):
     grok_api_key: Optional[str] = ""
     local_model_path: Optional[str] = ""
     provider: str = "openai"
+    tensor_split: Optional[str] = None
 
 @app.get("/api/config")
 async def get_config():
@@ -278,7 +293,8 @@ async def get_config():
         "anthropic_api_key": config.get('APIKeys', 'anthropic_api_key', fallback=''),
         "grok_api_key": config.get('APIKeys', 'grok_api_key', fallback=''),
         "local_model_path": config.get('LocalLLM', 'model_path', fallback=''),
-        "provider": config.get('LocalLLM', 'provider', fallback='openai')
+        "provider": config.get('LocalLLM', 'provider', fallback='openai'),
+        "tensor_split": config.get('LocalLLM', 'tensor_split', fallback=None)
     }
 
 @app.post("/api/config")
@@ -294,7 +310,11 @@ async def update_config(config_data: ConfigModel):
         'anthropic_api_key': config_data.anthropic_api_key or '',
         'grok_api_key': config_data.grok_api_key or ''
     }
-    config['LocalLLM'] = {'model_path': config_data.local_model_path or '', 'provider': config_data.provider}
+    config['LocalLLM'] = {
+        'model_path': config_data.local_model_path or '', 
+        'provider': config_data.provider,
+        'tensor_split': config_data.tensor_split or ''
+    }
     save_config_file(config)
     
     # Save folders to history
@@ -307,29 +327,50 @@ async def update_config(config_data: ConfigModel):
         
     return {"status": "success", "message": "Configuration saved"}
 
-@app.post("/api/search", response_model=SearchResponse)
+@app.post("/api/search")
 async def search_files(request: SearchRequest):
     global index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25
     
-    if not index:        raise HTTPException(status_code=400, detail="Index not loaded. Please configure and index a folder first.")
+    if not index:
+        raise HTTPException(status_code=400, detail="Index not loaded. Please configure and index a folder first.")
+
+    print(f"\n[API] POST /api/search - Query: '{request.query}'")
 
     try:
         start_time = time.time()
         
         config = load_config()
         provider = config.get('LocalLLM', 'provider', fallback='openai')
-
+        
         # Determine correct API key based on provider
-        api_key = None
-        if provider == 'openai':
-            api_key = config.get('APIKeys', 'openai_api_key', fallback=None)
-        elif provider == 'gemini':
-            api_key = config.get('APIKeys', 'gemini_api_key', fallback=None)
+        api_key = config.get('APIKeys', 'openai_api_key', fallback=None)
+        if provider == 'gemini':
+            api_key = config.get('APIKeys', 'gemini_api_key', fallback=api_key)
         elif provider == 'anthropic':
-            api_key = config.get('APIKeys', 'anthropic_api_key', fallback=None)
+            api_key = config.get('APIKeys', 'anthropic_api_key', fallback=api_key)
         elif provider == 'grok':
-            api_key = config.get('APIKeys', 'grok_api_key', fallback=None)
+            api_key = config.get('APIKeys', 'grok_api_key', fallback=api_key)
+
+        is_agentic = config.get('General', 'agent_mode', fallback='False').lower() == 'true'
+        
+        if is_agentic:
+            print("[API] Running in AGENTIC mode.")
+            from backend.agent import ReActAgent
+            agent = ReActAgent(provider, api_key, {
+                'index': index, 'docs': docs, 'tags': tags, 'config': config,
+                'index_summaries': index_summaries, 'cluster_summaries': cluster_summaries,
+                'cluster_map': cluster_map, 'bm25': bm25
+            })
+            return StreamingResponse(agent.stream_chat(request.query), media_type="text/event-stream")
+
         model_path = config.get('LocalLLM', 'model_path', fallback=None)
+        tensor_split_str = config.get('LocalLLM', 'tensor_split', fallback=None)
+        tensor_split = None
+        if tensor_split_str:
+            try:
+                tensor_split = [float(x) for x in tensor_split_str.split(',')]
+            except:
+                pass
         from backend.llm_integration import cached_smart_summary, cached_generate_ai_answer, summarize
 
         # Run Search
@@ -354,8 +395,8 @@ async def search_files(request: SearchRequest):
             file_name = file_info['filename'] if file_info else None
             file_path = file_info['path'] if file_info else None
             
-            # For top 3 results, use CACHED Smart Summary (LLM) if configured
-            if idx < 3:
+            # For top 1 results, use CACHED Smart Summary (LLM) if configured
+            if idx < 1:
                 summary = cached_smart_summary(result['document'], request.query, provider, api_key, model_path, file_name=file_name)
             else:
                 # Fallback to fast summary for others to save time
@@ -393,9 +434,11 @@ async def search_files(request: SearchRequest):
         # We try to generate an answer if any provider is configured
         context_text = "\n\n".join(context_snippets[:4]) # Top 4 results
         if context_text:
-            print(f"Generating answer with {active_model_name}...")
+            logger.info(f"Generating answer with {active_model_name}...")
             # We now pass provider and api_key to CACHED generate_ai_answer
-            ai_answer = cached_generate_ai_answer(context_text, request.query, provider, api_key, model_path)
+            ai_answer = cached_generate_ai_answer(context_text, request.query, provider, api_key, model_path, tensor_split=tensor_split)
+        else:
+            logger.info("No context found for AI answer generation.")
         
         # Save to search history
         execution_time_ms = int((time.time() - start_time) * 1000)
@@ -407,7 +450,9 @@ async def search_files(request: SearchRequest):
             active_model=active_model_name
         )
     except Exception as e:
-        print(f"Search error: {e}")
+        logger.error(f"Search error: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/search/history")
@@ -437,7 +482,29 @@ async def delete_all_search_history():
         count = database.delete_all_search_history()
         return {"status": "success", "message": f"Deleted {count} history items", "deleted_count": count}
     except Exception as e:
+        logger.error(f"Error clearing history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+class LogRequest(BaseModel):
+    level: str
+    message: str
+    source: Optional[str] = "Frontend"
+    stack: Optional[str] = None
+
+@app.post("/api/logs")
+async def receive_log(log: LogRequest):
+    """endpoint to receive logs from frontend"""
+    log_msg = f"[{log.source}] {log.message}"
+    if log.stack:
+        log_msg += f"\nStack: {log.stack}"
+    
+    if log.level.lower() == 'error':
+        logger.error(log_msg)
+    elif log.level.lower() == 'warn' or log.level.lower() == 'warning':
+        logger.warning(log_msg)
+    else:
+        logger.info(log_msg)
+    return {"status": "logged"}
 
 @app.post("/api/open-file")
 async def open_file(request: dict):
@@ -477,7 +544,8 @@ async def list_indexed_files():
 async def get_folder_history():
     """Get previously used folders."""
     try:
-        history = database.get_folder_history()
+        # User requested: ONLY show 100% indexed folders in history
+        history = database.get_folder_history(indexed_only=True)
         return [item['path'] for item in history]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -569,12 +637,24 @@ async def trigger_indexing(background_tasks: BackgroundTasks):
     background_tasks.add_task(run_indexing, config, folders)
     return {"status": "accepted", "message": "Indexing started in background"}
 
-def indexing_progress_callback(current, total, filename):
+def indexing_progress_callback(current, total, message=None):
     global indexing_status
+    if message:
+        indexing_status["current_file"] = message # Reuse current_file field for generic status message
+    elif filename := message: # Fallback if called with old signature (unlikely)
+        indexing_status["current_file"] = f"Processing {filename}"
+        
     indexing_status["processed_files"] = current
     indexing_status["total_files"] = total
-    indexing_status["current_file"] = filename
-    indexing_status["progress"] = int((current / total) * 100)
+    # If 0-100 scale is passed directly as current, respect it
+    if total == 100 and current > 1: 
+        indexing_status["progress"] = current
+    else:
+        indexing_status["progress"] = int((current / total) * 100)
+    
+    # Debug log
+    if indexing_status["progress"] % 10 == 0 or message:
+        logger.info(f"Indexing Progress: {indexing_status['progress']}% - {indexing_status['current_file']}")
 
 @app.get("/api/agent/chat")
 async def agent_chat(query: str):
@@ -623,6 +703,7 @@ def run_indexing(config, folders):
     model_path = config.get('LocalLLM', 'model_path', fallback=None)
     
     try:
+        logger.info(f"Starting indexing for folders: {folders}")
         # Unpack 7 values
         new_index, new_docs, new_tags, new_summ_index, new_summ_docs, new_cluster_map, new_bm25 = create_index(
             folders, provider, api_key, model_path, 
@@ -634,16 +715,21 @@ def run_indexing(config, folders):
             index_summaries, cluster_summaries, cluster_map = new_summ_index, new_summ_docs, new_cluster_map
             bm25 = new_bm25
             
-            print("Indexing completed successfully.")
+            logger.info("Indexing completed successfully.")
             indexing_status["running"] = False
             indexing_status["progress"] = 100
+            indexing_status["progress"] = 100
             indexing_status["current_file"] = "Complete"
+            
+            # Mark folders as successfully indexed for history
+            for folder in folders:
+                database.mark_folder_indexed(folder)
         else:
-            print("Indexing failed or no documents found.")
+            logger.error("Indexing failed or no documents found.")
             indexing_status["running"] = False
             indexing_status["error"] = "No documents found or processed"
     except Exception as e:
-        print(f"Error during indexing: {e}")
+        logger.error(f"Error during indexing: {e}")
         indexing_status["running"] = False
         indexing_status["error"] = str(e)
 

@@ -22,26 +22,26 @@ class ReActAgent:
         Yields dicts like: {"type": "thought", "content": "..."}
         """
         
-        system_prompt = """You are a research agent. Answer the user's question using the available tools.
+        system_prompt = """You are an advanced Research Assistant. Answer the user's question by thinking step-by-step and using tools.
         
-TOOLS:
-- search_knowledge_base(query): Search the document index for information.
-- list_files(): List available file names.
-- read_file(path): Read the full content of a file.
+AVAILABLE TOOLS:
+- search_knowledge_base(query): Search the indexed documents for concepts, people, and data.
+- list_files(): List the names of all indexed files.
+- read_file(filename_or_path): Read the full text content of a specific file.
 
-FORMAT:
-1. Thought: Comment on what you need to find.
-2. Action: tool_name
-3. Action Input: input_string
-4. Observation: [Tool output will be inserted here]
-... (Repeat)
-5. Final Answer: Your detailed response.
+STRICT FORMAT:
+Thought: (Explain what you are looking for and why)
+Action: (Exactly one of: search_knowledge_base, list_files, read_file)
+Action Input: (The parameter for the tool)
 
-IMPORTANT: 
-- Use 'search_knowledge_base' first to find relevant files.
-- If you find a file but need more details, use 'read_file'.
-- If the tool output contains the answer, OUTPUT 'Final Answer:'.
-- Do not make up information.
+Wait for the "Observation:" from the system before continuing. 
+When you have the final answer, use this format:
+Final Answer: (Your detailed response citing sources)
+
+CRITICAL: 
+- If searching for a person, use their exact name.
+- If you find a relevant file in search, use 'read_file' to get details.
+- Do NOT hallucinate info not in the documents.
 """
 
         history = [f"Question: {user_query}"]
@@ -70,8 +70,10 @@ IMPORTANT:
                     output = llm.create_completion(
                         prompt, 
                         max_tokens=256, 
-                        stop=["Observation:", "Definition:"], 
-                        echo=False
+                        stop=["Observation:", "Definition:", "Thought:"], 
+                        echo=False,
+                        temperature=0.1,
+                        repeat_penalty=1.1
                     )
                     response_text = output['choices'][0]['text']
                 else:
@@ -92,7 +94,9 @@ IMPORTANT:
 
             # Clean response
             response_text = response_text.strip()
-            full_thought = f"Thought: {response_text}"
+            
+            # Print for server console debug
+            print(f"\n[AGENT THOUGHT] {response_text}\n")
             
             # Parse Thought/Action from response
             # Sometimes LLM outputs "Thought: x \n Action: y" 
@@ -102,32 +106,56 @@ IMPORTANT:
             current_step_log = f"Thought: {response_text}"
             history.append(current_step_log)
             
-            # Extract Action
-            # Regex for "Action: (.+?)\nAction Input: (.+)"
-            action_match = re.search(r"Action:\s*(.+?)\nAction Input:\s*(.+)", response_text, re.DOTALL)
+            # Extract Action using primary format
+            action_match = re.search(r"Action:\s*(search_knowledge_base|list_files|read_file)", response_text, re.IGNORECASE)
+            input_match = re.search(r"Action Input:\s*(.+)", response_text, re.IGNORECASE | re.DOTALL)
             
+            # Fallback for tool-call style: search_knowledge_base("input")
+            if not action_match or not input_match:
+                fallback_match = re.search(r"(search_knowledge_base|list_files|read_file)\s*\((\"|')?(.*?)(\"|')?\)", response_text, re.IGNORECASE)
+                if fallback_match:
+                    action_name = fallback_match.group(1).lower()
+                    action_input = fallback_match.group(3)
+                    # Create artificial matches for the logic below
+                    class MockMatch:
+                        def __init__(self, val): self.val = val
+                        def group(self, _): return self.val
+                    action_match = MockMatch(action_name)
+                    input_match = MockMatch(action_input)
+
             if "Final Answer:" in response_text:
                 final_ans = response_text.split("Final Answer:")[-1].strip()
+                print(f"[AGENT FINAL ANSWER] {final_ans}")
                 yield {"type": "answer", "content": final_ans}
                 return
             
-            if not action_match:
-                # Maybe it just thought?
-                yield {"type": "thought", "content": response_text.split("Action:")[0].strip()}
-                if "Action:" in response_text:
-                    # Malformed action
-                    pass
+            if not action_match or not input_match:
+                # Provide feedback to the agent if they tried to call a tool but failed format
+                if "Action:" in response_text or "(" in response_text:
+                    err_msg = "Error: Invalid format. Please use 'Action: [tool_name]' and 'Action Input: [input]' strictly."
+                    print(f"[AGENT CORRECTION] {err_msg}")
+                    history.append(f"Observation: {err_msg}")
+                    yield {"type": "error", "content": f"Agent Error: Malformed action. Sending correction to AI..."}
+                    continue
                 else:
-                     # If it stopped without action, maybe it's done or confused?
-                     # Force it to final answer if it looks like an answer?
-                     if len(response_text) > 50:
-                         yield {"type": "answer", "content": response_text}
-                         return
-                     continue
+                    # If it just thought without action, nudge it
+                    if len(response_text) > 40:
+                        thought_content = response_text
+                        yield {"type": "thought", "content": thought_content}
+                        # If it seems like an answer, treat it as one
+                        if "Final Answer:" not in response_text and step > 1:
+                             print(f"[AGENT AUTO-ANSWER] {response_text}")
+                             yield {"type": "answer", "content": response_text}
+                             return
+                    
+                    err_msg = "Observation: You provided a thought but no Action. Please choose a tool to proceed or provide a 'Final Answer:'."
+                    history.append(err_msg)
+                    continue
 
-            action = action_match.group(1).strip()
-            action_input = action_match.group(2).strip()
+            action = action_match.group(1).strip().lower()
+            action_input = input_match.group(1).strip()
             
+            print(f"[AGENT ACTION] {action}('{action_input}')")
             yield {"type": "thought", "content": f"Decided to use {action} on '{action_input}'"}
             yield {"type": "action", "content": f"Executing {action}..."}
             
@@ -141,13 +169,13 @@ IMPORTANT:
                     else:
                         observation = tool_func(action_input)
                 except Exception as e:
-                    observation = f"Error: {e}"
+                    observation = f"Error executing tool {action}: {e}"
             else:
-                observation = f"Error: Tool '{action}' not found."
+                observation = f"Error: Tool '{action}' not found. Available: {list(tools.AVAILABLE_TOOLS.keys())}"
                 
-            obs_log = f"Observation: {observation[:500]}..." # Log short
+            print(f"[AGENT OBSERVATION] {observation[:200]}...")
             history.append(f"Observation: {observation}")
-            
             yield {"type": "observation", "content": observation[:200] + "..."}
             
-        yield {"type": "error", "content": "Max steps reached without final answer."}
+        print("[AGENT ERROR] Max steps reached.")
+        yield {"type": "error", "content": "The agent was unable to find a definitive answer within the allotted steps."}

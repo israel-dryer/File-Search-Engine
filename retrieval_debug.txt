@@ -1,0 +1,281 @@
+DEBUGGING RETRIEVAL FOR: which companies did siddhesh worked from fractal for providing services?
+
+--- Result 1 ---
+File: Siddhesh_Bhurke_Resume.pdf
+Content: Siddhesh Bhurke  
++44-7405332986/+91 -9029873193 | bhurke.siddhesh@gmail.com | www.linkedin.com/in/siddhesh -bhurke/  |London, UK  
+SUMMARY  
+An experienced Data Analytics Consultant  with a versatile skill set, including Python, Pyspark, SQL, data engineerin g, machine 
+learning, and more. Holds a substantial record of driving revenue growth, enhancing operational efficiency, and enabling cost  
+savings through data -driven solutions across various projects and clients. Combines strong analytical acumen with advan ced 
+technical proficiency to deliver impactful results in diverse markets globally.  
+TECHNICAL SKILLS       
+Languages & Tools :   Python , PySpark , SQL, R, Tableau , PowerBI, Pandas, Keras, scikit -learn  
+Frameworks and Tools :   Azure Datafactory, Data Bricks , DevOps, Git, CI -CD, GCP, BigQuery  
+Machine Learning:   Regression, Classification, Data Mining, Data Analysis, Tree -Based Modeling  
+Certifications:    Google Cloud Certification: Cloud Data Engineer  Professional Certificate (2020)  
+PROFESSIONAL EXPERIENCE       
+Analytics Consultant II,  Fractal Analytics                                                                                                                      April 2020 –Present  
+Strategy and Analytics: London, United Kingdom  | Feb 2022 – present                                                                       Client: Google, UK  
+● Identified growth opportunities by diligently monitoring SEO key metrics, leading to data -informed decisions and boosted 
+performance  across EMEA markets with 21% Q/Q active users’ growth . 
+● Regularly updated and evaluated the impact of quarterly OKRs using SEO metrics such as user growth and impressions, improving 
+predictive accuracy for future quarters.  
+● Streamlined performance tracking by identifying market -specific KPIs, setting up end -to-end pipelines, and buil ding attribution 
+models, leading to an enhanced understanding of market performances.  
+Gaming Platform Revenue Analytics: Mumbai, India |Oct 2021 – Jan 2022                                              Client: Sony PlayStation, IN  
+● Collaborated with a top gaming platform to analyze  revenue uplift  through player segmentation, thereby contributing to a better 
+understanding of revenue trends.  
+● Developed player segmentation into test and control groups, based on their impact on revenue and game playtime, leading  to an 
+improved player impact understanding.  
+● Employed the pymatch algorithm in propensity modelling to gain a matching score, analyzed revenue uplift from the derived KPI 's 
+between test and control groups, observed an 8% uplift  in revenue.  
+Analytics Consul tant I,  Fractal Analytics  
+Cost Performance Management tool: Mumbai, India |Feb 2021 – Sept 2021   Client: MARS, IN  
+● Built a model to identify  cost drivers over different periods and designed a scenario simulation tool, enhancing the client's strategic 
+decision -making capabilities.  
+● Gathered business logic for data creation, leveraged Pytorch for model training, and used Integrated Gradients to i dentify cost drivers, 
+thus improving data utilization.  
+● Assisted in scaling the project  across numerous markets and product portfolios, resulting in  potential savings of 5 -6% across the 
+network, demonstrating significant cost -effectiveness.  
+Customer Service Levels: Mumbai, India  |April -2020 – Jan 2021                  Client: MARS, IN  
+● Devised a tool to forecast 12 -week customer order fulfilment, thereby assisting  key business stakeholders in strategic planning and 
+decision -making processes.  
+● Developed a classification model using CatBoost and XGBoost with ensemble method, attaining 78% and 81.4% accuracy respective ly, 
+which resulted in streamlined deployment in pro duction.  
+● Optimized production planning and boosted shipments, contributing to a significant increase in revenue by  $12M,  demonstrating the 
+tangible impact of effective data analysis and predictive modelling.  
+Data Analyst – Intern , UST Global , Trivandrum, India                                                                                                       Apr 2019 – Jun 2019  
+● Worked on Estimated Time of Arrival Optimization problem by reducing an  ETA from 4 hours to 30 min . Worked on Julia 
+Programming Benchmarking with respect to Python. Research on Facial recognition for payments, GDPR & Performed Competitive 
+Analysis of products.  
+Business development associate , Think & Learn Pvt. Ltd ., Mumbai, India                                                                   Aug 2017 – Jun 2018  
+● Generating revenue through counselling prospects and converting them into sales, converting free app users to paid users usin g 
+Emails, Calls and Direct sale s. 
+EDUCATION        
+MBA - Data Science and Data Analytics , Symbiosis Centre for Information Technology, Pune, India               Jun 2018 – March 2020   
+P.G. Diploma in Management , Welingkar Institute of Management, Mumbai, India                                                July 2015 – Jun 2017  
+B.Sc. - Physics , Ramnarain Ruia College, Mumbai, India                                                                                                 Jun 2011 – April 2014  
+ACADEMIC PROJECTS       
+Twitter Sentiment Analysis   
+● Extracted live tweets and performed Twitter Sentiment Analysis, Clustering, Network Analysis  and Influencer Analysis, also created 
+a front -end web application using Python to display the analysis in an effective way.  
+Customer Buying Behavior   
+● Predicted the customer buying behavior for an insurance company by building Machine learning model, the a im of the project was 
+to focus on True Positive Rate over the accuracy of the model.  
+ACADEMIC AWARDS AND HONORS       
+● ‘BEST PAPER AWARD’  for a paper published at UGC care from SIOM institute.                       2020  
+● Secured 1st place  in Ruia Research Convention for a research project on ‘Reflex Time’.                     2012
+--------------------
+
+--- Result 2 ---
+File: Siddhesh_Bhurke_Resume - 2023(1).docx
+Content: Siddhesh Bhurke
++91-9029873193| bhurke.siddhesh@outlook.com | https://www.linkedin.com/in/siddhesh-bhurke/|Mumbai, India
+SUMMARY
+An experienced Analytics Consultant with a versatile skill set, including Python, SQL, machine learning, and more. Holds a substantial record of driving revenue growth, enhancing operational efficiency, and enabling cost savings through data-driven solutions across various projects and clients. Combines strong analytical acumen with advanced technical proficiency to deliver impactful results in diverse markets globally.
+TECHNICAL SKILLS      
+Languages & Tools: 		Python, PySpark, SQL, R, Tableau, PowerBI, Pandas, Keras, scikit-learn
+Frameworks and Tools: 		Azure Datafactory, DataBricks, DevOps, Git, CI-CD, GCP, BigQuery
+Machine Learning: 		Regression, Classification, ROC, Data Mining, Data Analysis, Tree-Based Modeling
+Certifications: 			Google Cloud Certification: Cloud Data Engineer Professional Certificate (2020)
+PROFESSIONAL EXPERIENCE      
+Analytics Consultant II, Fractal Analytics                                                                                                                            April 2020 – Present
+Strategy and Analytics: London, United Kingdom | Sept 2022 – Aug 2023                                                                   Client: Google, UK
+Identified growth opportunities by diligently monitoring SEO key metrics, leading to data-informed decisions and boosted
+performance across EMEA markets with 21% Q/Q active users’ growth.
+Regularly updated and evaluated the impact of quarterly OKRs using SEO metrics such as user growth and impressions, improving
+predictive accuracy for future quarters.
+Streamlined performance tracking by identifying market-specific KPIs, setting up end-to-end pipelines, and building attribution
+models, leading to an enhanced understanding of market performances.
+Gaming Platform Revenue Analytics: Mumbai, India |Oct 2021 – Jan 2022                                              Client: Sony PlayStation, IN
+Collaborated with a top gaming platform to analyze revenue uplift through player segmentation, thereby contributing to a better understanding of revenue trends.
+Developed player segmentation into test and control groups, based on their impact on revenue and game playtime, leading to an improved player impact understanding.
+Employed the pymatch algorithm in propensity modelling to gain a matching score, analyzing revenue uplift from the derived KPI's between test and control groups, observed an 8% uplift in revenue.
+Analytics Consultant I, Fractal Analytics
+Cost Performance Management tool: Mumbai, India |Feb 2021 – Sept 2021                                                              Client: MARS, IN
+Built a model to identify cost drivers over different periods and designed a scenario simulation tool, enhancing the client's strategic decision-making capabilities.
+Gathered business logic for data creation, leveraged Pytorch for model training, and used Integrated Gradients to identify cost drivers, thus improving data utilization.
+Assisted in scaling the project across numerous markets and product portfolios, resulting in potential savings of 5-6% across the network, demonstrating significant cost-effectiveness.
+Customer Service Levels: Mumbai, India |April-2020 – Jan 2021
+Devised a tool to forecast 12-week customer order fulfilment, thereby assisting key business stakeholders in strategic planning and decision-making processes.
+Developed a classification model using CatBoost and XGBoost with ensemble method, attaining 78% and 81.4% accuracy respectively, which resulted in streamlined deployment in production.
+Optimized production planning and boosted shipments, contributing to a significant increase in revenue by $12M, demonstrating the tangible impact of effective data analysis and predictive modelling.
+Data Analyst – Intern, UST Global, Trivandrum, India                                                                                                        Apr 2019 – Jun 2019
+Worked on Estimated Time of Arrival Optimization problem by reducing an ETA from 4 hours to 30 min. Worked on Julia Programming Benchmarking with respect to Python. Research on Facial recognition for payments, GDPR & Performed Competitive Analysis of products.
+Business development associate, Think & Learn Pvt. Ltd., Mumbai, India                                                                     Aug 2017 – Jun 2018
+Generating revenue through counselling prospects and converting them into sales, converting free app users to paid users using Emails, Calls and Direct sales.
+EDUCATION       
+MBA - Data Science and Data Analytics, Symbiosis Centre for Information Technology, Pune, India               Jun 2018 – March 2020 
+P.G. Diploma in Management, Welingkar Institute of Management, Mumbai, India                                                July 2015 – Jun 2017
+B.Sc. - Physics, Ramnarain Ruia College, Mumbai, India                                                                                                 Jun 2011 – April 2014
+ACADEMIC PROJECTS      
+Extracted live tweets and performed Twitter Sentiment Analysis, Clustering, Network Analysis and Influencer Analysis, also created a front-end web application using Python to display the analysis in an effective way.
+Customer Buying Behavior	
+Predicted the customer buying behavior for an insurance company by building Machine learning model, the aim of the project was to focus on True Positive Rate over the accuracy of the model.
+ACADEMIC AWARDS AND HONORS      
+‘BEST PAPER AWARD’ for a paper published at UGC care from SIOM institute. 					                 2020
+Secured 1st place in Ruia Research Convention for a research project on ‘Reflex Time’.				                2012
+--------------------
+
+--- Result 3 ---
+File: Siddhesh_Bhurke_Resume 2024.docx
+Content: Siddhesh Bhurke
++91-9029873193 | bhurke.siddhesh@outlook.com | www.linkedin.com/in/siddhesh-bhurke/ |Mumbai, India
+SUMMARY
+An experienced Data Analytics Consultant with a versatile skill set, including Python, Pyspark, SQL, data engineering, machine learning, and more. Holds a substantial record of driving revenue growth, enhancing operational efficiency, and enabling cost savings through data-driven solutions across various projects and clients. Combines strong analytical acumen with advanced technical proficiency to deliver impactful results in diverse markets globally.
+TECHNICAL SKILLS      
+Languages & Tools: 		Python, PySpark, SQL, R, Tableau, PowerBI, Pandas, Keras, scikit-learn
+Frameworks and Tools: 		Azure Datafactory, DataBricks, DevOps, Git, CI-CD, GCP, BigQuery
+Machine Learning: 		Regression, Classification, Data Mining, Data Analysis, Tree-Based Modeling
+Certifications: 			Google Cloud Certification: Cloud Data Engineer Professional Certificate (2020)
+PROFESSIONAL EXPERIENCE      
+Senior Analytics Consultant, Fractal Analytics                                                                                                           April 2020 –Present
+Demand Forecasting & Reorder Point Analysis: Mumbai, India | Nov 2024 – Present                                  Client: Metro Brands, IN
+Developed a time-series forecasting model using Gradient Boosting techniques to predict product demand across 320+ stores, improving forecasting accuracy by 15% and reducing stockouts and overstocking.
+Analytics Consultant II, Fractal Analytics                                                                                                                      April 2020 –Present
+SND Simulation: Mumbai, India | Feb 2024 – Oct 2024                                                                                                         Client: P&G, JP
+Optimizing on cost throughout plant network for Japan market, I have to optimize on flexible RDD by moving future orders to current date by consolidating orders to form a full truck load. Found $1Mn opportunity across top 10 customers.
+Last Mile Delivery: Mumbai, India | Sep 2023 – Jan 2024                                                                                            Client: Schneider, IN
+Worked on finding opportunities for NAM market, to optimize on the logistics cost by consolidating the shipments based on reason codes. Shipment consolidations are performed at daily, weekly and bi-weekly levels.
+Strategy and Analytics: London, United Kingdom | Feb 2022 – Aug 2023                                                                    Client: Google, UK
+Identified growth opportunities by diligently monitoring SEO key metrics, leading to data-informed decisions and boosted performance across EMEA markets with 21% Q/Q active users’ growth.
+Regularly updated and evaluated the impact of quarterly OKRs using SEO metrics such as user growth and impressions, improving predictive accuracy for future quarters.Streamlined performance tracking by identifying market-specific KPIs, setting up end-to-end pipelines, and building attribution models, leading to an enhanced understanding of market performances.
+Gaming Platform Revenue Analytics: Mumbai, India |Oct 2021 – Jan 2022                                             Client: Sony PlayStation, IN
+Collaborated with a top gaming platform to analyze revenue uplift through player segmentation, thereby contributing to a better understanding of revenue trends.
+Developed player segmentation into test and control groups, based on their impact on revenue and game playtime, leading to an improved player impact understanding.
+Employed the pymatch algorithm in propensity modelling to gain a matching score, analyzed revenue uplift from the derived KPI's between test and control groups, observed an 8% uplift in revenue.
+  Analytics Consultant I, Fractal Analytics
+Cost Performance Management tool: Mumbai, India |Feb 2021 – Sept 2021 	Client: MARS, IN
+Built a model to identify cost drivers over different periods and designed a scenario simulation tool, enhancing the client's strategic decision-making capabilities.
+Gathered business logic for data creation, leveraged Pytorch for model training, and used Integrated Gradients to identify cost drivers, thus improving data utilization.
+Assisted in scaling the project across numerous markets and product portfolios, resulting in potential savings of 5-6% across the network, demonstrating significant cost-effectiveness.
+Customer Service Levels: Mumbai, India |April-2020 – Jan 2021					            Client: MARS, IN
+Devised a tool to forecast 12-week customer order fulfilment, thereby assisting key business stakeholders in strategic planning and decision-making processes.
+Developed a classification model using CatBoost and XGBoost with ensemble method, attaining 78% and 81.4% accuracy respectively, which resulted in streamlined deployment in production.
+Optimized production planning and boosted shipments, contributing to a significant increase in revenue by $12M, demonstrating the tangible impact of effective data analysis and predictive modelling.
+--------------------
+
+--- Result 4 ---
+File: Siddhesh_Bhurke_Resume.docx
+Content: Siddhesh Bhurke
++91-9029873193| bhurke.siddhesh@outlook.com | www.linkedin.com/in/siddhesh-bhurke/ |London, UK
+SUMMARY
+An experienced Analytics Consultant with a versatile skill set, including Python, SQL, machine learning, and more. Holds a substantial record of driving revenue growth, enhancing operational efficiency, and enabling cost savings through data-driven solutions across various projects and clients. Combines strong analytical acumen with advanced technical proficiency to deliver impactful results in diverse markets globally.
+TECHNICAL SKILLS      
+Languages & Tools: 		Python, PySpark, SQL, R, Tableau, PowerBI, Pandas, Keras, scikit-learn
+Frameworks and Tools: 		Azure Datafactory, DataBricks, DevOps, Git, CI-CD, GCP, BigQuery
+Machine Learning: 		Regression, Classification, ROC, Data Mining, Data Analysis, Tree-Based Modeling
+Certifications: 			Google Cloud Certification: Cloud Data Engineer Professional Certificate (2020)
+PROFESSIONAL EXPERIENCE      
+Analytics Consultant, Fractal Analytics                                                                                                                                  April 2020 – Present
+Strategy and Analytics: London, United Kingdom | Feb 2022 – present 
+Identified growth opportunities by diligently monitoring SEO key metrics, leading to data-informed decisions and boosted performance across EMEA markets.
+Regularly updated and evaluated the impact of quarterly OKRs using SEO metrics such as user growth and impressions, improving predictive accuracy for future quarters.
+Streamlined performance tracking by identifying market-specific KPIs, setting up end-to-end pipelines, and building attribution models, leading to an enhanced understanding of market performances.
+Gaming Platform Revenue Analytics: Mumbai, India |Oct 2021 – Jan 2022
+Collaborated with a top gaming platform to analyze revenue uplift through player segmentation, thereby contributing to a better understanding of revenue trends.
+Developed player segmentation into test and control groups, based on their impact on revenue and game playtime, leading to an improved player impact understanding.
+Employed the pymatch algorithm in propensity modelling to gain a matching score, analyzing revenue uplift from the derived KPI's between test and control groups, observed an 8% uplift in revenue.
+Cost Performance Management tool: Mumbai, India |Feb 2021 – Sept 2021
+Built a model to identify cost drivers over different periods and designed a scenario simulation tool, enhancing the client's strategic decision-making capabilities.
+Gathered business logic for data creation, leveraged Pytorch for model training, and used Integrated Gradients to identify cost drivers, thus improving data utilization.
+Assisted in scaling the project across numerous markets and product portfolios, resulting in potential savings of 5-6% across the network, demonstrating significant cost-effectiveness.
+Customer Service Levels: Mumbai, India |April-2020 – Jan 2021
+Devised a tool to forecast 12-week customer order fulfilment, thereby assisting key business stakeholders in strategic planning and decision-making processes.
+Developed a classification model using CatBoost and XGBoost with ensemble method, attaining 78% and 81.4% accuracy respectively, which resulted in streamlined deployment in production.
+Optimized production planning and boosted shipments, contributing to a significant increase in revenue by $12M, demonstrating the tangible impact of effective data analysis and predictive modelling.
+Data Analyst – Intern, UST Global, Trivandrum, India                                                                                                        Apr 2019 – Jun 2019
+Worked on Estimated Time of Arrival Optimization problem by reducing an ETA from 4 hours to 30 min. Worked on Julia Programming Benchmarking with respect to Python. Research on Facial recognition for payments, GDPR & Performed Competitive Analysis of products.
+Business development associate, Think & Learn Pvt. Ltd., Mumbai, India                                                                     Aug 2017 – Jun 2018
+Generating revenue through counselling prospects and converting them into sales, converting free app users to paid users using Emails, Calls and Direct sales.
+EDUCATION       
+MBA - Data Science and Data Analytics, Symbiosis Centre for Information Technology, Pune, India               Jun 2018 – March 2020 
+P.G. Diploma in Management, Welingkar Institute of Management, Mumbai, India                                                July 2015 – Jun 2017
+B.Sc. - Physics, Ramnarain Ruia College, Mumbai, India                                                                                                 Jun 2011 – April 2014
+ACADEMIC PROJECTS      
+Extracted live tweets and performed Twitter Sentiment Analysis, Clustering, Network Analysis and Influencer Analysis, also created a front-end web application using Python to display the analysis in an effective way.
+Customer Buying Behavior	
+Predicted the customer buying behavior for an insurance company by building Machine learning model, the aim of the project was to focus on True Positive Rate over the accuracy of the model.
+ACADEMIC AWARDS AND HONORS      
+‘BEST PAPER AWARD’ for a paper published at UGC care from SIOM institute. 					                 2020
+Secured 1st place in Ruia Research Convention for a research project on ‘Reflex Time’.				                2012
+--------------------
+
+--- Result 5 ---
+File: Siddharth Pawar.pdf
+Content: Siddharth  Pawar , PMP  
+Sr. Data Analytics Manager  
+ 
+CONTACT  
+ 
+ +44 7435 384 471  
+ sid.pawar161@gmail.com  
+ 18, 11 Sinclair Road, London, 
+W14 0NS.  
+ www.linkedin.com/in/siddharth
+-pawar  
+ 
+ 
+ 
+Technical Skills  
+Strong project management  skills, 
+including knowledge of agile 
+frameworks and basic tracking tools 
+such as Jira and Azure Dev . 
+Skilled in business intelligence tools 
+such as Tableau Desktop , Tableau 
+Server, Microsoft Power BI , and Google 
+Data Studio.    
+Experience in driving data 
+transformation with SQL, Tableau Prep, 
+Alteryx, Snowflake, GoogleSQL, and 
+Amazon Athena.  
+Developed solutions involved Google 
+Cloud and Amazon AWS cloud 
+infrastructure.  
+Expert at Web application development 
+with HTML, CSS, Bootstrap, JavaScript, 
+and D3.js.   
+Ability to manage complex 
+organizations composed of internal, 
+virtual, an d decentralized teams.      
+PROFILE  
+A highly motivated and experienced Data Analytics Manager , currently working at Fractal 
+Analytics , one of the leading companies in the field of AI and Data Analytics Services. 
+Experienced in managing distributed teams and collaborating with internal/external 
+stakeholders (up to C -level executives) to drive company -wide data analytics initiatives such 
+as analytics roadmap design, and setting up data culture and teams.  
+Skilled in understanding business needs and translating them to the technical team. Owning 
+program & project management and communication to the stakeholders, to ensure timely 
+delivery an d engineering excellence.  
+ 
+EXPERIENCE  
+Senior Data Analytical Manager  
+Fractal Analytics |  London  | April  2021 - Present  
+▪ Currently managing Fractal’s Growth Marketing team for our biggest client ( Google ), 
+owning a set of projects impacting 6M+  quarter on quarter (Q/Q) users for Google Ads. 
+Collaborated with Product Owners and stakeholders to design and develop growth 
+measurement methodologies, analysis, and reporting solutions integrated with surveys, 
+Google Analytics, social media , and search console to amplify Ad acquisition strategy. 
+Under my leadership, the team achieved a 21% Q/Q active users’  growth  across EMEA 
+measured with Clicks, Impressions, and Revenue.  
+ 
+▪ Designed and managed the BI transformation for Skechers , supporting the finance t eam 
+to reduce business decision time by 95% and increasing end -to-end solution 
+automation. This led to a  reduction of 90% of the operational time  needed to pull, 
+analyze and organize data in the organization.  
+Data Analytical Manager  
+Fractal Analytics |  London  | April 2019 - March  2021  
+▪ Designed and delivered the Data analytics roadmap for our client ( Salesforce , Inc.) to 
+effectively identify audiences across channels and markets, which translated into a 30% 
+increase in Clicks and Impressions Q/Q, helping Salesforce achieve a 20% increase in 
+Sales Cloud’s marketing ROI . 
+ 
+▪ Identified and addressed logistic cost reduction opportunities for Mars  Pet UK by 
+developing analytics reporting with the help of logistic cost datasets, automated data 
+ingestion, and preparation with Azure Data Factory / Databricks. The solution helped 
+unfold the 'Why' behind increasing logistic costs of the Ma rs organization and to capture 
+cost reduction opportunities that translated to a 26% higher ROI Q/Q.
+--------------------
+

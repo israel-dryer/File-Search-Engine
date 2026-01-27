@@ -94,6 +94,12 @@ def init_database():
     # Index for fast cache lookups
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_cache_lookup ON response_cache(query_hash, model_id)")
     
+    # NEW: Index for fast file-to-chunk range lookups
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_file_faiss_range ON files(faiss_start_idx, faiss_end_idx)")
+    
+    # NEW: Index for fast filename lookups (used by agent and search)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_file_name ON files(filename)")
+
     # Populate history from existing files if empty
     cursor.execute("SELECT COUNT(*) FROM folder_history")
     if cursor.fetchone()[0] == 0:
@@ -152,6 +158,17 @@ def get_file_by_path(path: str) -> Optional[Dict]:
     cursor = conn.cursor()
     
     cursor.execute("SELECT * FROM files WHERE path = ?", (path,))
+    row = cursor.fetchone()
+    
+    conn.close()
+    return dict(row) if row else None
+
+def get_file_by_name(filename: str) -> Optional[Dict]:
+    """Get a file by its name."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM files WHERE filename = ?", (filename,))
     row = cursor.fetchone()
     
     conn.close()
@@ -290,16 +307,39 @@ def add_folder_to_history(path: str):
     conn.commit()
     conn.close()
 
-def get_folder_history(limit: int = 20) -> List[Dict]:
+def get_folder_history(limit: int = 20, indexed_only: bool = False) -> List[Dict]:
     """Get recent folder history."""
     conn = get_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT * FROM folder_history ORDER BY last_used_at DESC LIMIT ?", (limit,))
+    if indexed_only:
+        cursor.execute("SELECT * FROM folder_history WHERE is_indexed = 1 ORDER BY last_used_at DESC LIMIT ?", (limit,))
+    else:
+        cursor.execute("SELECT * FROM folder_history ORDER BY last_used_at DESC LIMIT ?", (limit,))
+    
     history = [dict(row) for row in cursor.fetchall()]
     
     conn.close()
     return history
+
+def mark_folder_indexed(path: str):
+    """Mark a folder as successfully indexed."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    timestamp = datetime.now()
+    
+    # Upsert with is_indexed = 1
+    cursor.execute("SELECT id FROM folder_history WHERE path = ?", (path,))
+    row = cursor.fetchone()
+    
+    if row:
+        cursor.execute("UPDATE folder_history SET is_indexed = 1, last_used_at = ? WHERE id = ?", (timestamp, row['id']))
+    else:
+        cursor.execute("INSERT INTO folder_history (path, added_at, last_used_at, is_indexed) VALUES (?, ?, ?, 1)", 
+                      (path, timestamp, timestamp))
+    
+    conn.commit()
+    conn.close()
 
 def delete_folder_history_item(path: str) -> bool:
     """Delete a single folder from history. Returns True if deleted."""

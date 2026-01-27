@@ -268,15 +268,29 @@ If you prefer cloud-based embeddings:
 
 | Model | Size | RAM | Speed | Quality | Best For |
 |-------|------|-----|-------|---------|----------|
-| **TinyLlama 1.1B** ⭐ | 637 MB | 2 GB | ⚡⚡⚡ | ⭐⭐ | Testing, older hardware |
-| **Gemma 2B** ⭐ | 1.5 GB | 4 GB | ⚡⚡⚡ | ⭐⭐⭐ | Fast summarization |
-| **Phi-2 2.7B** ⭐ | 1.7 GB | 5 GB | ⚡⚡ | ⭐⭐⭐ | Reasoning, code |
-| **Phi-3 Mini** ⭐ | 2.2 GB | 6 GB | ⚡⚡ | ⭐⭐⭐⭐ | General purpose |
-| **Mistral 7B** ⭐ | 4.4 GB | 8 GB | ⚡ | ⭐⭐⭐⭐⭐ | Best quality |
-| **Llama 2 7B** | 4.1 GB | 8 GB | ⚡ | ⭐⭐⭐⭐ | Chat, general |
-| **Qwen 1.5 7B** | 4.4 GB | 8 GB | ⚡ | ⭐⭐⭐⭐ | Multilingual |
+| **TinyLlama 1.1B** ⭐ | 637 MB | 2 GB | 27 TPS | ⭐⭐ | Ultra-fast testing, low-end PCs |
+| **Gemma 2B** ⭐ | 1.5 GB | 4 GB | 14 TPS | ⭐⭐⭐ | Fast summarization, reliable |
+| **Phi-2 2.7B** ⭐ | 1.7 GB | 5 GB | 9 TPS | ⭐⭐⭐ | Reasoning, technical text |
+| **Mistral 7B (v0.2)** ⭐ | 4.4 GB | 8 GB | 6 TPS | ⭐⭐⭐⭐⭐ | High precision, complex docs |
+| **Mistral 7B (v0.3 Q8)** | 7.7 GB | 14 GB | 3 TPS | ⭐⭐⭐⭐⭐ | Maximum quality, needs high RAM |
 
-⭐ = Recommended models
+⭐ = Recommended models for balance of speed and performance.
+
+### 📈 Benchmarked Performance (Stress Test)
+*Tested on Local Machine - CPU Inference (4 Threads)*
+
+| Rank | Model | Score | Speed (TPS) | Mem Usage | Load Time |
+|:---:|---|:---:|:---:|:---:|:---:|
+| 🥇 | **TinyLlama 1.1B (Q4)** | **99.8** | **26.9** | ~100MB | 0.2s |
+| 🥈 | **Gemma 2B Instruct (Q4)** | **99.7** | **14.1** | ~100MB | 0.5s |
+| 🥉 | **Phi-2 2.7B (Q4)** | **94.8** | **8.9** | ~130MB | 0.8s |
+| 4 | **Mistral 7B v0.2 (Q4)** | **81.6** | **6.0** | ~115MB | 0.7s |
+| 5 | **Mistral 7B v0.3 (Q8)** | **66.7** | **2.9** | ~130MB | 2.3s |
+
+**Key Insights:**
+- **TinyLlama** is the undisputed speed king for quick indexing and previews.
+- **Gemma 2B** offers the best "speed-to-quality" ratio for most users.
+- **Q8 Models** (like Mistral v0.3) provide the highest quality but require significantly more RAM and result in a 50% speed penalty compared to Q4 quantizations.
 
 ### Running Benchmarks
 
@@ -286,17 +300,21 @@ Compare model performance with the built-in benchmark suite:
 # Run from command line
 npm run benchmark
 
+# Run advanced model stress tests
+npm run test:model-stress
+
 # Or via API
 curl -X POST http://localhost:8000/api/benchmarks/run
 ```
 
 Benchmarks measure:
 - **Tokens per second (TPS)** - Generation speed
-- **Fact retention** - Accuracy of summaries
-- **Memory usage** - RAM consumption
+- **Fact retention** - Accuracy of summaries (measured by concept recall)
+- **Memory usage** - Peak RAM consumption
 - **Load time** - Model startup time
 
-Results are saved to `benchmark_results.md` and viewable in the Settings panel.
+Results are saved to `data/benchmark_results.json` and viewable in the Settings panel.
+
 
 
 ## 🧪 Testing

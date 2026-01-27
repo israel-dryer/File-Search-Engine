@@ -305,6 +305,111 @@ python scripts/verify_golden_set.py
 
 > **CRITICAL: Add entry here after EVERY change with date, description, and files.**
 
+### 2026-01-27 (Maintenance)
+- **Fixed Dependency & Added Logging** - Resolved explicit dependency error and added full-stack logging
+  - **Backend**: Added `sentence-transformers==3.0.1` to `requirements.txt`
+  - **Backend**: Implemented centralized logging to `data/app.log` in `api.py`
+  - **Frontend**: Added `logger.js` utility and global error handling in `main.jsx`
+  - **Files**: `requirements.txt`, `backend/api.py`, `frontend/src/lib/logger.js`, `frontend/src/main.jsx`
+- **Implemented Indexing Progress Bar** - Added granular progress tracking for RAPTOR indexing
+  - **Backend**: Updated `indexing.py` to report weighted progress for extraction, embedding, and summarization
+  - **Frontend**: Updated `SettingsModal.jsx` to show detailed status messages
+  - **Files**: `backend/indexing.py`, `backend/api.py`, `frontend/src/components/SettingsModal.jsx`
+- **Fixed Sentence Transformers Import** - Resolved dependency error for local embeddings
+  - **Dependencies**: Added `langchain-huggingface==0.0.3` to requirements
+  - **Verification**: Created `scripts/verify_imports.py` to confirm successful loading
+  - **Files**: `requirements.txt`, `backend/llm_integration.py`
+- **Fixed Dependency Conflicts** - Resolved `langchain-core` vs `langchain-huggingface` incompatibility
+  - **Dependencies**: Upgraded `langchain` stack and `langchain-huggingface==1.2.0` in `venv_new`
+  - **Verification**: Verified successful installation of compatible versions
+  - **Files**: `requirements.txt`
+- **Fixed Local Model "No Response"** - Resolved missing `llama_cpp` import
+  - **Fix**: Added `from llama_cpp import Llama` in `backend/llm_integration.py`
+  - **Enhancement**: Added full logging to `backend/api.py` search endpoint
+  - **Files**: `backend/llm_integration.py`, `backend/api.py`
+- **Fixed Llama.cpp Crash** - Added thread locking for local model inference
+  - **Issue**: `GGML_ASSERT` crash due to concurrent access to single `Llama` instance
+  - **Fix**: Implemented `threading.Lock()` in `backend/llm_integration.py`
+  - **Files**: `backend/llm_integration.py`
+- **Optimized Local Indexing** - Disabled slow LLM summarization for clusters on local provider
+  - **Fix**: Switched to fast regex-based summary in `backend/indexing.py` for `local` provider
+  - **Result**: Indexing time reduced from ~20mins to seconds
+  - **Files**: `backend/indexing.py`
+- **Fixed Startup Timeout** - Optimized backend loading sequence
+  - **Issue**: `Llama` import blocking main thread for >20s, causing frontend runner timeout
+  - Files: `backend/llm_integration.py`, `scripts/start_all.js`
+- **Performance Optimization** - significantly improved local model response time
+  - **Enhancement**: Increased local LLM thread count from 4 to dynamic (~16 on user's 20-thread CPU)
+  - **Enhancement**: Enabled GPU offloading (`n_gpu_layers=-1`) for supported hardware
+  - **Optimization**: Reduced "Smart Summary" calls in Search API from top 3 to top 1 document (saving ~10s per query)
+  - **Files**: `backend/llm_integration.py`, `backend/api.py`
+- **Identity Accuracy & Multi-GPU Support** - fixed "Siddharth vs Siddhesh" confusion
+  - **Fix**: Implemented "Identity/Exact Match Boost" in `search.py` to favor exact name matches in queries.
+  - **Fix**: Updated LLM system prompt to strictly distinguish between similar names and identities.
+  - **Enhancement**: Added `tensor_split` support in `config.ini` for splitting models across multiple GPUs (e.g., `[0.5, 0.5]`).
+  - **Files**: `backend/search.py`, `backend/llm_integration.py`, `backend/api.py`
+- **Agentic Reasoning Fixes** - Fixed tool execution and parsing errors
+  - **Fix**: Resolved `AttributeError` and `TypeError` in `search_knowledge_base` and `list_files` tools.
+  - **Enhancement**: Improved `read_file` tool to automatically resolve filenames to full system paths via database lookup.
+  - **Fix**: Updated ReAct agent system prompt and regex parsing for more robust tool usage and formatting.
+  - **Files**: `backend/agent.py`, `backend/tools.py`, `backend/database.py`
+- **Startup Stability & Health Checks** - Resolved health check timeouts
+  - **Fix**: Added `@app.get("/")` and `@app.get("/api/health")` to `api.py` for reliable startup verification.
+  - **Optimization**: Offloaded local model warmup to a background thread using `asyncio.to_thread` with a delay.
+  - **Fix**: Prevented main event loop blockage during large model loading.
+  - **Files**: `backend/api.py`
+- **Port Reliability & System Visibility** - Added auto-cleanup and verbose logs
+  - **feat**: Modified `scripts/start_all.js` to automatically terminate zombie processes on ports 8000 and 5173 before startup.
+  - **feat**: Integrated verbose print statements across `api.py`, `agent.py`, `search.py`, and `llm_integration.py`.
+  - **Info**: AI Researcher mode now logs every thought, action, and tool observation to the backend console for real-time debugging.
+  - **Files**: `scripts/start_all.js`, `backend/agent.py`, `backend/search.py`, `backend/llm_integration.py`, `backend/api.py`
+- **Agent Self-Correction & Robustness** - Improved reliability on local LLMs
+  - **feat**: Implemented an "Error-Feedback" loop in `agent.py`. If the agent fails to format an action correctly, the error is fed back to its history as an `Observation`, allowing it to self-correct.
+  - **feat**: Added fallback regex parsing for `tool_name("input")` syntax, handling cases where LLMs deviate from ReAct formatting.
+  - **fix**: Added proactive "nudges" in the history if the agent provides a thought without an accompanying action.
+  - **Files**: `backend/agent.py`
+- **Blazing Fast Inference Optimizations** - Maximized local LLM throughput
+  - **perf**: Enabled **Flash Attention**, **f16_kv**, and **offload_kqv** in `llm_integration.py` for significant speedups.
+  - **perf**: Optimized thread allocation for both prompt processing (`n_threads`) and batch generation (`n_threads_batch`).
+  - **perf**: Implemented context truncation (10k chars) to prevent prompt-processing stalls on huge document sets.
+  - **perf**: Switched to greedy decoding (temp 0.1-0.2) in Agent and Answer modes for faster token generation.
+  - **Files**: `backend/llm_integration.py`, `backend/agent.py`
+- **Quality & Data Structure Optimizations** - High speed without compromise
+  - **feat**: Implemented **Parallel Hybrid Search**. Semantic (FAISS) and Keyword (BM25) searches now run concurrently using `ThreadPoolExecutor`.
+  - **perf**: Added **SQLite B-Tree Indices** to `files` table (`faiss_start_idx`, `faiss_end_idx`, `filename`) for $O(\log N)$ metadata lookups.
+  - **feat**: Upgraded `search.py` tokenizer with a custom **Stop-Word Filter** to improve keyword precision and result quality.
+  - **Info**: Maintained **FAISS FlatL2** index type to ensure 100% exact retrieval accuracy (No approximation compromise).
+  - **Files**: `backend/search.py`, `backend/database.py`
+- **UX & Search Quality Improvements**
+  - **fix**: Implemented **Search Result Diversification**. The search engine now enforces a "Max 2 Chunks Per File" rule (soft limit) to prevent a single large document from dominating all search results.
+  - **test**: Created `tests/test_api.py` to verify the `/api/open-file` endpoint functionality and error handling.
+  - **clean**: Renamed temporary `test_api_extra.py` to standard `tests/test_api.py` to adhere to project structure rules.
+  - **Files**: `backend/search.py`, `tests/test_api.py`
+
+- **Advanced Model Stress Testing & Ranking**
+  - **feat**: Created `backend/tests/test_model_stress.py` for rigorous performance evaluation.
+  - **feat**: Implemented weighted scoring system (TPS, Accuracy, Load Time, Memory) in `scripts/benchmark_models.py`.
+  - **test**: Successfully ranked 5 local models; identified TinyLlama and Gemma as top performers.
+  - **Files**: `backend/tests/test_model_stress.py`, `scripts/benchmark_models.py`, `AGENTS.md`
+  - **Verification**: Ran full stress suite (9-minute run); all tests passed with valid performance data.
+
+- **Refined Folder History**
+
+  - "Recent History" now STRICTLY filters for "100% indexed" folders.
+  - Added `is_indexed` column to `folder_history` table.
+  - Files: `backend/database.py`, `backend/api.py`
+- **Fixed Search Critical Bugs**
+  - Resolved `NameError` and `UnboundLocalError` in Search API.
+  - Fixed `database` import scope issues in `api.py` and `llm_integration.py`.
+  - Files: `backend/api.py`, `backend/llm_integration.py`
+- **Fixed Startup Timeout**
+  - Restored `log` function and `colors` object in `scripts/start_all.js` to fix `ReferenceError`.
+  - Increased health check timeout to 90s and forced `127.0.0.1` binding.
+  - Files: `scripts/start_all.js`
+- **Fixed Frontend Port Mismatch**
+  - Configured `vite.config.js` to strictly use `host: 127.0.0.1` and `port: 5173`.
+  - Files: `frontend/vite.config.js`
+
 ### 2026-01-21 (UI Redesign)
 - **Implemented Cosmic Glassmorphism UI** - Complete visual overhaul
   - `frontend/src/index.css`: New cosmic color palette, glass utilities, animations

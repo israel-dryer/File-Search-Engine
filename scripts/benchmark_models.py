@@ -118,8 +118,27 @@ class BenchmarkResult:
         self.samples_tested = 0
         self.errors = []
         
+    @property
+    def weighted_score(self) -> float:
+        """Calculate a single score for ranking (0-100)."""
+        if self.errors and not self.tokens_per_second:
+            return 0.0
+            
+        # Normalize metrics (assuming reasonable max/min values)
+        # TPS: 10 is very fast for CPU, 0 is failed
+        tps_norm = min(self.tokens_per_second / 10.0, 1.0) * 100
+        # Accuracy: already 0-100
+        accuracy_norm = self.fact_retention_score
+        # Load time: 10s is slow, 0.1s is fast
+        load_norm = max(0, (10.0 - min(self.load_time_s, 10.0)) / 10.0) * 100
+        # Memory: 8GB is high, 0.5GB is low (for these models)
+        mem_norm = max(0, (8192.0 - min(self.peak_memory_mb, 8192.0)) / 8192.0) * 100
+        
+        # Weights
+        return (tps_norm * 0.45) + (accuracy_norm * 0.45) + (load_norm * 0.05) + (mem_norm * 0.05)
+
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        d = {
             "model_name": self.model_name,
             "model_path": self.model_path,
             "model_size_mb": round(self.model_size_mb, 2),
@@ -130,9 +149,11 @@ class BenchmarkResult:
             "total_generation_time_s": round(self.total_generation_time_s, 2),
             "peak_memory_mb": round(self.peak_memory_mb, 2),
             "fact_retention_score": round(self.fact_retention_score, 2),
+            "weighted_score": round(self.weighted_score, 2),
             "samples_tested": self.samples_tested,
             "errors": self.errors
         }
+        return d
 
 
 def get_memory_usage_mb() -> float:
@@ -142,11 +163,20 @@ def get_memory_usage_mb() -> float:
 
 
 def calculate_fact_retention(summary: str, key_concepts: List[str]) -> float:
-    """Calculate what percentage of key concepts appear in the summary."""
+    """Calculate what percentage of key concepts appear in the summary, with basic noise filtering."""
     if not summary or not key_concepts:
         return 0.0
-    summary_lower = summary.lower()
-    found = sum(1 for concept in key_concepts if concept.lower() in summary_lower)
+    
+    import re
+    summary_clean = re.sub(r'[^\w\s]', '', summary.lower())
+    
+    found = 0
+    for concept in key_concepts:
+        concept_lower = concept.lower()
+        # Look for exact word match or substring if multiple words
+        if concept_lower in summary_clean:
+            found += 1
+            
     return (found / len(key_concepts)) * 100
 
 

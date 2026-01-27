@@ -1,15 +1,51 @@
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain_anthropic import ChatAnthropic
-from langchain_huggingface import HuggingFaceEmbeddings
+import sys
+import os
+import logging
+import hashlib
+import re
+import threading
+import multiprocessing
+from backend import database
+
 try:
     from llama_cpp import Llama
 except ImportError:
     Llama = None
-import re
-import os
-import hashlib
-from backend import database
+
+try:
+    from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+    from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+    from langchain_anthropic import ChatAnthropic
+    from langchain_huggingface import HuggingFaceEmbeddings
+except ImportError:
+    # These will be handled individually in functions if needed, 
+    # but having them here as None allows tests to patch them.
+    OpenAIEmbeddings = None
+    ChatOpenAI = None
+    GoogleGenerativeAIEmbeddings = None
+    ChatGoogleGenerativeAI = None
+    ChatAnthropic = None
+    HuggingFaceEmbeddings = None
+
+_local_llm_lock = threading.Lock()
+
+
+# DEBUG: Print environment info IMMEDIATELY
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+try:
+    logger.info(f"LLM Integration Module Loading...")
+    logger.info(f"Python Executable: {sys.executable}")
+    logger.info(f"Python Path: {sys.path}")
+    logger.info(f"CWD: {os.getcwd()}")
+except Exception as e:
+    print(f"DEBUG ERROR: {e}")
+
+# IMPORTS FIXED: Lazy loading to prevent startup crashes
+# from langchain_huggingface import HuggingFaceEmbeddings
+
+# Llama import moved to get_local_llm to prevent top-level blocking
 
 # Cache for loaded models
 _embeddings_cache = {}
@@ -24,6 +60,18 @@ def get_embeddings(provider, api_key=None, model_path=None):
         return _embeddings_cache[cache_key]
     
     print(f"Loading embeddings for provider: {provider}")
+
+    # DEBUG: Log environment when actually requesting embeddings
+    try:
+        import sys
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"--- get_embeddings called ---")
+        logger.info(f"Python Executable: {sys.executable}")
+        logger.info(f"Python Path: {sys.path}")
+        logger.info(f"CWD: {os.getcwd()}")
+    except:
+        pass
 
     if provider == 'openai' and api_key:
         embeddings = OpenAIEmbeddings(api_key=api_key)
@@ -44,21 +92,29 @@ def get_embeddings(provider, api_key=None, model_path=None):
     else:
         # Default / Local
         print("Loading local embeddings (HuggingFace)...")
+        if HuggingFaceEmbeddings is None:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error("HuggingFaceEmbeddings not available")
+            return None
+
         embeddings = HuggingFaceEmbeddings(
             model_name="all-MiniLM-L6-v2",
             model_kwargs={'device': 'cpu'},
             encode_kwargs={'normalize_embeddings': True}
         )
+
     
     print("Embeddings loaded!")
     _embeddings_cache[cache_key] = embeddings
     return embeddings
 
-def get_local_llm(model_path):
+def get_local_llm(model_path, tensor_split=None):
     """Load and cache the GGUF model directly with LlamaCpp."""
-    if not Llama:
+    if Llama is None:
         print("llama_cpp not installed")
         return None
+
         
     if not model_path or not os.path.exists(model_path):
         print(f"Model not found at {model_path}")
@@ -70,11 +126,19 @@ def get_local_llm(model_path):
     print(f"Loading Local LLM from {model_path}...")
     try:
         # Load with reasonable defaults for CPU inference
+        # Advanced performance tuning for "blazing fast" inference
         llm = Llama(
             model_path=model_path,
-            n_ctx=4096,  # Larger context window
-            n_threads=4, # cpu threads
-            verbose=False
+            n_ctx=4096,           # Context window
+            n_threads=max(multiprocessing.cpu_count() - 2, 1), # Use more cores for prompt processing
+            n_threads_batch=multiprocessing.cpu_count(),       # Max threads for batch processing
+            n_gpu_layers=-1,      # Full GPU offload
+            n_batch=512,          # Batch size for prompt processing
+            f16_kv=True,          # Use FP16 for KV cache (faster/less VRAM)
+            flash_attn=True,      # Enable Flash Attention (Blazing fast sequences)
+            offload_kqv=True,     # Offload KQV to GPU
+            tensor_split=tensor_split,
+            verbose=False         # Disable verbose logs for cleaner console unless debugging
         )
         _llm_cache[model_path] = llm
         print("Local LLM loaded!")
@@ -83,10 +147,10 @@ def get_local_llm(model_path):
         print(f"Failed to load Local LLM: {e}")
         return None
 
-def warmup_local_model(model_path):
+def warmup_local_model(model_path, tensor_split=None):
     """Pre-load the local model into memory on startup."""
     if model_path:
-        get_local_llm(model_path)
+        get_local_llm(model_path, tensor_split=tensor_split)
 
 
 def get_llm_client(provider, api_key=None, model_path=None):
@@ -148,7 +212,7 @@ def get_llm_client(provider, api_key=None, model_path=None):
         _llm_client_cache[cache_key] = client
     return client
 
-def generate_ai_answer(context, question, provider, api_key=None, model_path=None):
+def generate_ai_answer(context, question, provider, api_key=None, model_path=None, tensor_split=None):
     """
     Generate a natural language answer using the selected provider.
     """
@@ -158,31 +222,41 @@ def generate_ai_answer(context, question, provider, api_key=None, model_path=Non
         return "Error: Could not initialize AI model. Check settings and API keys."
 
     prompt_text = f"""You are a document search assistant. Answer the question using ONLY facts from the provided documents.
+    
+    IMPORTANT: 
+    1. Check Names: If the question is about a specific person (e.g., 'Siddhesh'), ensure you ONLY use documents describing that exact person. Do NOT confuse them with similar names like 'Siddharth'.
+    2. Quote specific content, data, numbers, or key details from the documents. 
+    3. Reference which file the information comes from when possible. 
+    4. If the documents do not contain information for the specific person requested, state that clearly.
 
-IMPORTANT: Quote specific content, data, numbers, or key details from the documents. Reference which file the information comes from when possible. Don't give generic answers.
-
-Documents:
-{context}
-
-Question: {question}
-
-Answer (cite specific details from the documents):"""
+    Documents:
+    {context}
+    
+    Question: {question}
+    
+    Answer (cite specific details from the documents):"""
 
     try:
         # Handle Local LLM (LlamaCpp)
         if isinstance(client, str) and client.startswith("LOCAL:"):
             real_model_path = client.split("LOCAL:")[1]
-            llm = get_local_llm(real_model_path)
+            llm = get_local_llm(real_model_path, tensor_split=tensor_split)
             if not llm:
                 return "Error: Local model failed to load."
 
-            output = llm.create_completion(
-                prompt_text,
-                max_tokens=512,
-                stop=["System:", "Question:", "Context:"],
-                echo=False,
-                temperature=0.3
-            )
+            # Truncate context if it's too large for fast local processing
+            if len(context) > 10000:
+                context = context[:10000] + "... [Truncated for speed]"
+
+            with _local_llm_lock:
+                output = llm.create_completion(
+                    prompt_text,
+                    max_tokens=512,
+                    stop=["System:", "Question:", "Context:", "Documents:"],
+                    echo=False,
+                    temperature=0.2, # Lower temperature = faster/more stable
+                    repeat_penalty=1.1
+                )
             return output['choices'][0]['text'].strip()
 
         # Handle LangChain Clients (Cloud)
@@ -190,8 +264,10 @@ Answer (cite specific details from the documents):"""
             from langchain_core.messages import HumanMessage, SystemMessage
 
             messages = [
-                SystemMessage(content="You are a document search assistant. Quote specific content, data, numbers, or details from the documents. Reference file names when available."),
-                HumanMessage(content=f"Documents:\n{context}\n\nQuestion: {question}\n\nAnswer with specific details:")
+                SystemMessage(content="""You are a precise document search assistant. 
+                CRITICAL: You must distinguish between similar names. If the question asks about 'Siddhesh', do NOT provide info about 'Siddharth'. 
+                Only answer based on the provided documents. Quote facts and reference file names."""),
+                HumanMessage(content=f"Documents:\n{context}\n\nQuestion: {question}\n\nAnswer:")
             ]
 
             response = client.invoke(messages)
@@ -213,7 +289,7 @@ def compute_cache_key(query: str, context: str, model_id: str) -> tuple:
     context_hash = hashlib.sha256(context_norm.encode('utf-8')).hexdigest()
     return query_hash, context_hash
 
-def cached_generate_ai_answer(context, question, provider, api_key=None, model_path=None):
+def cached_generate_ai_answer(context, question, provider, api_key=None, model_path=None, tensor_split=None):
     """
     Wrapper around generate_ai_answer that checks persistent cache first.
     """
@@ -228,10 +304,11 @@ def cached_generate_ai_answer(context, question, provider, api_key=None, model_p
     # 1. Check Cache
     cached_text = database.get_cached_response(query_hash, context_hash, model_id, "ai_answer")
     if cached_text:
+        print(f"[CACHE] Hit for AI answer on query: '{question[:30]}...'")
         return cached_text
-        
-    # 2. Generate Trace (Cache Miss)
-    answer = generate_ai_answer(context, question, provider, api_key, model_path)
+    
+    print(f"[CACHE] Miss for AI answer. Generating with {model_id}...")
+    answer = generate_ai_answer(context, question, provider, api_key, model_path, tensor_split=tensor_split)
     
     # 3. Store in Cache (if valid response)
     if answer and not answer.startswith("Error"):
@@ -258,7 +335,10 @@ def cached_smart_summary(text, query, provider, api_key=None, model_path=None, f
     # 1. Check Cache
     cached_text = database.get_cached_response(query_hash, context_hash, model_id, "smart_summary")
     if cached_text:
+        print(f"[CACHE] Hit for smart_summary in {file_name or 'unknown'}")
         return cached_text
+    
+    print(f"[CACHE] Miss for smart_summary in {file_name or 'unknown'}. Generating...")
 
     # 2. Generate
     summary = smart_summary(text, query, provider, api_key, model_path, file_name)
@@ -281,8 +361,11 @@ def smart_summary(text, query, provider, api_key=None, model_path=None, file_nam
 
     client = get_llm_client(provider, api_key, model_path)
     if not client:
+        print(f"[AI] Error: get_llm_client returned None for provider {provider}")
         # Fallback to regex summary if no model available
         return summarize(text, provider, api_key, model_path, query)
+    
+    print(f"[AI] Smart Summary: Analyzing '{file_name or 'unnamed document'}' for query '{query}'")
 
     # Truncate text to avoid token limits (approx 3000 chars ~ 750 tokens)
     truncated_text = text[:3000]
@@ -308,13 +391,14 @@ Key findings:"""
             if not llm:
                 return summarize(text, provider, api_key, model_path, query)
 
-            output = llm.create_completion(
-                prompt_text,
-                max_tokens=128,
-                stop=["Document Excerpt:", "Summary:"],
-                echo=False,
-                temperature=0.1
-            )
+            with _local_llm_lock:
+                output = llm.create_completion(
+                    prompt_text,
+                    max_tokens=128,
+                    stop=["Document Excerpt:", "Summary:"],
+                    echo=False,
+                    temperature=0.1
+                )
             result = output['choices'][0]['text'].strip()
 
         # Handle LangChain Clients
@@ -337,14 +421,14 @@ def extract_answer(text, question):
     Legacy extraction: keyword matching fallback.
     """
     if not text or not question:
-        return None
+        return ""
     
     question_lower = question.lower()
     cleaned_q = re.sub(r'\b(what|where|when|who|why|how|which|did|does|is|are|was|were)\b', '', question_lower)
     question_terms = [w for w in re.findall(r'\b[a-zA-Z]{3,}\b', cleaned_q) if w not in {'the', 'and', 'for', 'that', 'this'}]
     
     if not question_terms:
-        return None
+        return ""
     
     sentences = re.split(r'(?<=[.!?])\s+', text)
     scored_sentences = []
@@ -363,7 +447,7 @@ def extract_answer(text, question):
             answer = answer[:297] + "..."
         return answer
     
-    return None
+    return ""
 
 def summarize(text, provider=None, api_key=None, model_path=None, question=None):
     """

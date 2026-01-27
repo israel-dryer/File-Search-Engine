@@ -14,6 +14,11 @@ import os
 class TestGetEmbeddings(unittest.TestCase):
     """Tests for get_embeddings function."""
 
+    def setUp(self):
+        """Clear cache before each test."""
+        from backend.llm_integration import _embeddings_cache
+        _embeddings_cache.clear()
+
     @patch('backend.llm_integration.OpenAIEmbeddings')
     def test_get_embeddings_openai(self, mock_openai_embeddings):
         """Test getting OpenAI embeddings."""
@@ -63,11 +68,13 @@ class TestGetEmbeddings(unittest.TestCase):
 class TestGetLocalLLM(unittest.TestCase):
     """Tests for get_local_llm function."""
 
+    @patch('backend.llm_integration.os.path.exists')
     @patch('backend.llm_integration.Llama')
-    def test_get_local_llm_success(self, mock_llama):
+    def test_get_local_llm_success(self, mock_llama, mock_exists):
         """Test loading a local LLM successfully."""
         from backend.llm_integration import get_local_llm
         
+        mock_exists.return_value = True
         mock_model = MagicMock()
         mock_llama.return_value = mock_model
         
@@ -75,11 +82,12 @@ class TestGetLocalLLM(unittest.TestCase):
         
         self.assertIsNotNone(result)
 
+
     def test_get_local_llm_no_llama(self):
         """Test behavior when llama_cpp is not installed."""
         from backend.llm_integration import get_local_llm
         
-        with patch('llm_integration.Llama', None):
+        with patch('backend.llm_integration.Llama', None):
             result = get_local_llm('/path/to/model.gguf')
             self.assertIsNone(result)
 
@@ -324,11 +332,13 @@ class TestGetTags(unittest.TestCase):
 class TestLocalModelIntegration(unittest.TestCase):
     """Tests for local model integration."""
 
+    @patch('backend.llm_integration.os.path.exists')
     @patch('backend.llm_integration.Llama')
-    def test_local_model_generates_text(self, mock_llama):
+    def test_local_model_generates_text(self, mock_llama, mock_exists):
         """Test that local model can generate text."""
         from backend.llm_integration import get_local_llm
         
+        mock_exists.return_value = True
         mock_model = MagicMock()
         mock_model.return_value = {
             'choices': [{'text': 'Generated response'}]

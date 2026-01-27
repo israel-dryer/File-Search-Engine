@@ -8,16 +8,18 @@ python-multipart==0.0.18
 
 # Vector Search
 faiss-cpu==1.12.0
+sentence-transformers==3.0.1
+langchain-huggingface==1.2.0
 
 # LLM Integration
-langchain
-langchain-community
-langchain-huggingface
-langchain-text-splitters
-langchain-google-genai
-langchain-anthropic
-langchain-openai
+langchain==1.2.7
+langchain-community==0.4.1
+langchain-text-splitters==1.1.0
+langchain-google-genai==4.2.0
+langchain-anthropic==1.3.1
+langchain-openai==1.1.7
 llama-cpp-python==0.2.90
+langchain-core==1.2.7
 
 # Document Processing
 pypdf==4.3.1
@@ -27,7 +29,7 @@ openpyxl==3.1.5
 
 # Utilities
 psutil==6.1.1
-watchdog
+watchdog==6.0.0
 
-scikit-learn==1.8.0
+scikit-learn==1.6.0
 rank-bm25==0.2.2

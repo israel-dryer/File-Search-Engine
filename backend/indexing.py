@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 from typing import List, Tuple, Dict
 from langchain_text_splitters import CharacterTextSplitter
-from backend.llm_integration import get_embeddings, get_tags, smart_summary
+from backend.llm_integration import get_embeddings, get_tags, smart_summary, summarize
 from backend.file_processing import extract_text
 from backend import database
 from backend.clustering import perform_global_clustering
@@ -56,7 +56,11 @@ def create_index(folder_paths, provider, api_key=None, model_path=None, progress
     if not all_files:
         return None, None, None, None, None, None, None
 
-    # 3. Parallel Text Extraction (CPU Bound)
+    # Define stage weights
+    # Extraction: 20%, Chunking: 5%, Embedding: 40%, Clustering: 5%, Summarization: 25%, Finalizing: 5%
+    # We will accumulate progress_base to ensure monotonic increase
+    
+    # 3. Parallel Text Extraction (CPU Bound) - 0% to 20%
     print("Step 1/5: Extracting Text (Parallel)...")
     valid_docs = [] # List of (filepath, text)
     
@@ -65,6 +69,7 @@ def create_index(folder_paths, provider, api_key=None, model_path=None, progress
         future_to_file = {executor.submit(safe_extract_text, f): f for f in all_files}
         
         compete_count = 0
+        total_files = len(all_files)
         for future in concurrent.futures.as_completed(future_to_file):
             filepath, text = future.result()
             if text:
@@ -72,11 +77,14 @@ def create_index(folder_paths, provider, api_key=None, model_path=None, progress
             
             compete_count += 1
             if progress_callback:
-                progress_callback(compete_count, len(all_files), f"Reading: {os.path.basename(filepath)}")
+                # Map 0-total_files to 0-20%
+                percent = int((compete_count / total_files) * 20)
+                progress_callback(percent, 100, f"Extracting: {os.path.basename(filepath)}")
 
     print(f"Successfully extracted text from {len(valid_docs)} files.")
 
-    # 4. Chunking (Mem Bound - Fast enough for main thread)
+    # 4. Chunking - 20% to 25%
+    if progress_callback: progress_callback(22, 100, "Chunking text...")
     print("Step 2/5: Chunking Text...")
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     
@@ -122,7 +130,8 @@ def create_index(folder_paths, provider, api_key=None, model_path=None, progress
             
     print(f"Generated {len(chunk_strings)} total chunks.")
 
-    # 5. Parallel Embedding (I/O Bound)
+    # 5. Parallel Embedding (I/O Bound) - 25% to 65%
+    if progress_callback: progress_callback(25, 100, "Starting embeddings...")
     print("Step 3/5: Embedding Chunks (Parallel)...")
     embeddings_model = get_embeddings(provider, api_key, model_path)
     
@@ -137,11 +146,16 @@ def create_index(folder_paths, provider, api_key=None, model_path=None, progress
         futures = {executor.submit(embeddings_model.embed_documents, batch): i for i, batch in enumerate(batches)}
         
         completed = 0
+        total_batches = len(batches)
         for future in concurrent.futures.as_completed(futures):
             batch_emb = future.result()
             chunk_embeddings.extend(batch_emb)
             completed += 1
-            # print(f"Embedded batch {completed}/{len(batches)}")
+            
+            if progress_callback:
+                # Map 0-total_batches to 25-65% (range of 40)
+                percent = 25 + int((completed / total_batches) * 40)
+                progress_callback(percent, 100, f"Embedding batch {completed}/{total_batches}")
 
     # Sort embeddings by original order? No, extend() might mix them up if not careful.
     # Wait, as_completed() yields out of order. We MUST re-order.
@@ -176,17 +190,20 @@ def create_index(folder_paths, provider, api_key=None, model_path=None, progress
              # We must ensure length matches.
              pass
 
-    # 5b. BM25 Indexing (CPU Bound - fast enough)
+    # 5b. BM25 Indexing - 65% to 68%
+    if progress_callback: progress_callback(66, 100, "Building Keyword Index...")
     print("Step 3.5/5: Building BM25 Index...")
     tokenized_corpus = [tokenize(doc) for doc in chunk_strings]
     bm25 = BM25Okapi(tokenized_corpus)
 
-    # 6. Global Clustering (RAPTOR)
+    # 6. Global Clustering (RAPTOR) - 68% to 75%
+    if progress_callback: progress_callback(70, 100, "Clustering content...")
     print("Step 4/5: Performing Global Clustering...")
     cluster_map = perform_global_clustering(chunk_embeddings, max_cluster_size=20)
     print(f"Created {len(cluster_map)} global clusters.")
     
-    # 7. Summarize Clusters (Parallel)
+    # 7. Summarize Clusters (Parallel) - 75% to 95%
+    if progress_callback: progress_callback(75, 100, "Summarizing clusters...")
     print("Step 5/5: Summarizing Clusters (Parallel)...")
     
     cluster_summaries = [] # List of summary texts
@@ -196,9 +213,17 @@ def create_index(folder_paths, provider, api_key=None, model_path=None, progress
         # Join texts of chunks in this cluster
         cluster_text = "\n\n".join([chunk_strings[i] for i in indices])
         # Generate summary
-        summary = smart_summary(cluster_text, "Summarize the key themes and facts in this collection.", 
-                              provider, api_key, model_path, file_name=f"Cluster {cluster_id}")
+        # Generate summary
+        if provider == 'local':
+             # For local models, skip heavy LLM summarization for speed
+             summary = summarize(cluster_text, provider, api_key, model_path, f"Cluster {cluster_id}")
+        else:
+             summary = smart_summary(cluster_text, "Summarize the key themes and facts in this collection.", 
+                                   provider, api_key, model_path, file_name=f"Cluster {cluster_id}")
         return cluster_id, summary
+
+    total_clusters = len(cluster_map)
+    processed_clusters = 0
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         future_to_cid = {executor.submit(process_cluster, cid, idxs): cid for cid, idxs in cluster_map.items()}
@@ -215,8 +240,15 @@ def create_index(folder_paths, provider, api_key=None, model_path=None, progress
                 
                 # Remap: Summary Index ID -> Original Chunk Indices
                 final_cluster_map[current_summary_idx] = cluster_map[cid]
+            
+            processed_clusters += 1
+            if progress_callback:
+                # Map 0-total_clusters to 75-95% (range of 20)
+                percent = 75 + int((processed_clusters / total_clusters) * 20)
+                progress_callback(percent, 100, f"Summarizing cluster {processed_clusters}/{total_clusters}")
     
-    # 8. Create FAISS Indices
+    # 8. Create FAISS Indices - 95% to 99%
+    if progress_callback: progress_callback(97, 100, "Finalizing Indices...")
     print("Finalizing Indices...")
     
     # Chunk Index

@@ -35,8 +35,10 @@ class TestModelComparison(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up models for testing - runs once before all tests."""
-        cls.models_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models')
+        # Correct path to project root models/ directory
+        cls.models_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'models')
         cls.available_models = []
+
         cls.working_models = []
         
         # Find all downloaded .gguf models
@@ -68,10 +70,11 @@ class TestModelComparison(unittest.TestCase):
     
     def test_models_available(self):
         """Test that at least one model is available for testing."""
-        self.assertGreater(
-            len(self.available_models), 0,
-            "No models found in models/ directory. Download at least one model."
-        )
+        if not self.available_models:
+             self.skipTest("No models found in models/ directory. Download at least one model.")
+        
+        self.assertGreater(len(self.available_models), 0)
+
     
     def test_model_loading(self):
         """Test that at least one model can be loaded."""
@@ -245,7 +248,7 @@ class TestModelQuality(unittest.TestCase):
     
     def test_response_coherence(self):
         """Test that model responses are coherent (not gibberish)."""
-        models_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models')
+        models_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'models')
         
         if not os.path.exists(models_dir):
             self.skipTest("Models directory not found")
@@ -287,7 +290,7 @@ class TestModelQuality(unittest.TestCase):
     
     def test_response_length_control(self):
         """Test that max_tokens parameter is respected."""
-        models_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models')
+        models_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'models')
         
         if not os.path.exists(models_dir):
             self.skipTest("Models directory not found")

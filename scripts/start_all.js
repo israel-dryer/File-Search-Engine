@@ -10,7 +10,7 @@ const path = require('path');
 const BACKEND_PORT = 8000;
 const FRONTEND_PORT = 5173;
 const HEALTH_CHECK_INTERVAL = 1000;
-const HEALTH_CHECK_TIMEOUT = 60000;
+const HEALTH_CHECK_TIMEOUT = 90000;
 
 const colors = {
     reset: '\x1b[0m',
@@ -42,12 +42,21 @@ function checkPort(port) {
 
 function healthCheck(port, path = '/') {
     return new Promise((resolve) => {
-        const req = http.get(`http://localhost:${port}${path}`, (res) => {
-            resolve(res.statusCode >= 200 && res.statusCode < 400);
+        const req = http.get(`http://127.0.0.1:${port}${path}`, (res) => {
+            if (res.statusCode >= 200 && res.statusCode < 400) {
+                resolve(true);
+            } else {
+                log('Health', colors.yellow, `Service on port ${port} returned status ${res.statusCode}`);
+                resolve(false);
+            }
         });
-        req.on('error', () => resolve(false));
-        req.setTimeout(2000, () => {
+        req.on('error', (err) => {
+            log('Health', colors.red, `Health check failed on port ${port}: ${err.message}`);
+            resolve(false);
+        });
+        req.setTimeout(10000, () => {
             req.destroy();
+            log('Health', colors.red, `Health check timed out on port ${port} (exceeded 10s)`);
             resolve(false);
         });
     });
@@ -80,27 +89,47 @@ function openBrowser(url) {
     });
 }
 
+function killPort(port) {
+    return new Promise((resolve) => {
+        const platform = process.platform;
+        let cmd = '';
+        if (platform === 'win32') {
+            cmd = `for /f "tokens=5" %a in ('netstat -aon ^| findstr :${port}') do taskkill /F /PID %a /T`;
+        } else {
+            cmd = `lsof -ti:${port} | xargs kill -9`;
+        }
+
+        exec(cmd, (err) => {
+            // Silently ignore errors - if port is not in use, it will fail but that's fine
+            resolve();
+        });
+    });
+}
+
 async function main() {
     console.log('\n' + colors.bright + colors.cyan + '═'.repeat(60) + colors.reset);
     console.log(colors.bright + colors.cyan + '  FILE SEARCH ENGINE - Unified Startup' + colors.reset);
     console.log(colors.bright + colors.cyan + '═'.repeat(60) + colors.reset + '\n');
 
-    // Check port availability
-    log('Setup', colors.yellow, 'Checking port availability...');
+    // Check port availability and KILL if necessary
+    log('Setup', colors.yellow, `Cleaning up ports ${BACKEND_PORT} and ${FRONTEND_PORT}...`);
+    await killPort(BACKEND_PORT);
+    await killPort(FRONTEND_PORT);
+
+    // Brief wait for OS to release ports
+    await new Promise(r => setTimeout(r, 1000));
 
     const backendPortFree = await checkPort(BACKEND_PORT);
     const frontendPortFree = await checkPort(FRONTEND_PORT);
 
     if (!backendPortFree) {
-        log('Error', colors.red, `Port ${BACKEND_PORT} is already in use. Please stop any existing backend process.`);
-        process.exit(1);
+        log('Warning', colors.yellow, `Port ${BACKEND_PORT} still busy, proceeding anyway...`);
     }
     if (!frontendPortFree) {
-        log('Error', colors.red, `Port ${FRONTEND_PORT} is already in use. Please stop any existing frontend process.`);
-        process.exit(1);
+        log('Warning', colors.yellow, `Port ${FRONTEND_PORT} still busy, proceeding anyway...`);
     }
 
-    log('Setup', colors.green, 'Ports available ✓');
+    log('Setup', colors.green, 'Environment ready ✓');
 
     // Detect Python executable (check for venv)
     const isWin = process.platform === 'win32';
@@ -133,7 +162,7 @@ async function main() {
     // Start Frontend
     log('Frontend', colors.magenta, 'Starting Vite dev server...');
     const npmCmd = isWin ? 'npm.cmd' : 'npm';
-    const frontendProcess = spawn(npmCmd, ['run', 'dev'], {
+    const frontendProcess = spawn(npmCmd, ['run', 'dev', '--', '--port', String(FRONTEND_PORT), '--strictPort'], {
         cwd: path.resolve(__dirname, '..', 'frontend'),
         shell: true,
         stdio: ['ignore', 'pipe', 'pipe']

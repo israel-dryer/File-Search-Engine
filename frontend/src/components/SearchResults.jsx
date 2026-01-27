@@ -72,18 +72,7 @@ const SearchResults = ({ results, aiAnswer }) => {
                                 </p>
 
                                 {/* Tags */}
-                                {result.tags && result.tags.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-4">
-                                        {result.tags.map((tag, i) => (
-                                            <span
-                                                key={i}
-                                                className="px-2.5 py-1 rounded-lg text-xs font-medium bg-primary/10 text-primary/80 border border-primary/20"
-                                            >
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
+                                {/* Tags Removed per user request */}
                             </div>
                         </motion.div>
                     ))}

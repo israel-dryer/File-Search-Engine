@@ -2,6 +2,7 @@ from typing import List, Dict, Any
 from backend import search, database, llm_integration
 from backend.file_processing import extract_text
 import json
+import os
 
 def tool_search_knowledge_base(query: str, global_state: dict) -> str:
     """
@@ -12,7 +13,7 @@ def tool_search_knowledge_base(query: str, global_state: dict) -> str:
     if not global_state.get('index'):
         return "Error: No knowledge base indexed."
         
-    results = search.search(
+    results, _ = search.search(
         query, 
         global_state['index'], 
         global_state['docs'], 
@@ -20,7 +21,8 @@ def tool_search_knowledge_base(query: str, global_state: dict) -> str:
         llm_integration.get_embeddings(global_state['config'].get('LocalLLM', 'provider', fallback='openai')),
         global_state.get('index_summaries'),
         global_state.get('cluster_summaries'),
-        global_state.get('cluster_map')
+        global_state.get('cluster_map'),
+        global_state.get('bm25')
     )
     
     if not results:
@@ -41,15 +43,34 @@ def tool_read_file(file_path: str) -> str:
     Args:
         file_path: Absolute or relative path to the file.
     """
+    if not file_path:
+        return "Error: No file path provided."
+        
+    resolved_path = file_path
+    if not os.path.exists(file_path):
+        # Clean the input (remove quotes if any)
+        clean_name = file_path.strip("'\" ")
+        # Try to find by filename in DB
+        file_info = database.get_file_by_name(clean_name)
+        if file_info:
+            resolved_path = file_info['path']
+        else:
+             # Try search in CWD just in case
+             if os.path.exists(clean_name):
+                 resolved_path = clean_name
+             else:
+                 return f"Error: File '{file_path}' not found. Use 'list_files' to see available files."
+
     try:
-        text = extract_text(file_path)
+        from backend.file_processing import extract_text
+        text = extract_text(resolved_path)
         if not text:
             return "File is empty or could not be read."
         return text[:5000] # Hard limit to prevent context overflow
     except Exception as e:
         return f"Error reading file: {str(e)}"
 
-def tool_list_files() -> str:
+def tool_list_files(query: str = None) -> str:
     """
     List all available files in the index.
     """

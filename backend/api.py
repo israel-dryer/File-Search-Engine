@@ -35,7 +35,7 @@ logger.info("--- SERVER RESTARTING (Logging Configured Early) ---")
 
 from backend.indexing import create_index, save_index, load_index
 from backend.search import search
-from backend.llm_integration import summarize, get_embeddings, generate_ai_answer
+from backend.llm_integration import summarize, get_embeddings, generate_ai_answer, stream_ai_answer
 from backend.file_processing import extract_text
 from backend.model_manager import get_available_models, get_local_models, start_download, get_download_status
 from backend import database
@@ -403,12 +403,8 @@ async def search_files(request: SearchRequest):
                     file_path = file_info.get('path')
                     file_name = file_info.get('filename')
             
-            # For top 1 results, use CACHED Smart Summary (LLM) if configured
-            if idx < 1:
-                summary = cached_smart_summary(result['document'], request.query, provider, api_key, model_path, file_name=file_name)
-            else:
-                # Fallback to fast summary for others to save time
-                summary = summarize(result['document'], provider, api_key, model_path, question=request.query)
+            # OPTIMIZATION: Use fast summary for all results to avoid blocking
+            summary = summarize(result['document'], provider, api_key, model_path, question=request.query)
             
             # Add file context to snippets for AI answer
             file_prefix = f"[From: {file_name}] " if file_name else ""
@@ -433,23 +429,10 @@ async def search_files(request: SearchRequest):
                 file_name=file_name
             ))
         
-        # Generate AI Answer if we have local model OR cloud provider
-        ai_answer = ""
+        # Return results immediately - AI Answer will be streamed via separate endpoint
         active_model_name = provider.capitalize()
         if provider == 'local' and model_path:
             active_model_name = os.path.basename(model_path).replace(".gguf", "").replace("-", " ")
-
-        # We try to generate an answer if any provider is configured
-        # Use top 6 snippets, truncated to 600 chars each = ~3600 chars total (~900 tokens)
-        # This is safe for 4096 token context windows while providing breadth
-        safe_snippets = [s[:600] for s in context_snippets[:6]]
-        context_text = "\n\n".join(safe_snippets)
-        if context_text:
-            logger.info(f"Generating answer with {active_model_name}...")
-            # We now pass provider and api_key to CACHED generate_ai_answer
-            ai_answer = cached_generate_ai_answer(context_text, request.query, provider, api_key, model_path, tensor_split=tensor_split)
-        else:
-            logger.info("No context found for AI answer generation.")
         
         # Save to search history
         execution_time_ms = int((time.time() - start_time) * 1000)
@@ -457,7 +440,7 @@ async def search_files(request: SearchRequest):
             
         return SearchResponse(
             results=processed_results,
-            ai_answer=ai_answer,
+            ai_answer="", # Empty for immediate return
             active_model=active_model_name
         )
     except Exception as e:
@@ -465,6 +448,67 @@ async def search_files(request: SearchRequest):
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/stream-answer")
+async def stream_answer_endpoint(request: SearchRequest):
+    """
+    Stream the AI answer for a given query.
+    Re-runs the search to get context (fast) and then streams tokens.
+    """
+    global index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25
+
+    if not index:
+         return StreamingResponse(iter(["Error: Index not loaded."]), media_type="text/event-stream")
+
+    config = load_config()
+    provider = config.get('LocalLLM', 'provider', fallback='openai')
+    api_key = config.get('APIKeys', 'openai_api_key', fallback=None)
+    if provider == 'gemini':
+        api_key = config.get('APIKeys', 'gemini_api_key', fallback=api_key)
+    elif provider == 'anthropic':
+        api_key = config.get('APIKeys', 'anthropic_api_key', fallback=api_key)
+    elif provider == 'grok':
+        api_key = config.get('APIKeys', 'grok_api_key', fallback=api_key)
+
+    model_path = config.get('LocalLLM', 'model_path', fallback=None)
+    tensor_split_str = config.get('LocalLLM', 'tensor_split', fallback=None)
+    tensor_split = None
+    if tensor_split_str:
+        try:
+            tensor_split = [float(x) for x in tensor_split_str.split(',')]
+        except:
+            pass
+
+    # Re-run search to get context
+    results, context_snippets = search(
+        request.query, index, docs, tags,
+        get_embeddings(provider, api_key, model_path),
+        index_summaries, cluster_summaries, cluster_map, bm25
+    )
+
+    # Prepare context
+    final_context_snippets = []
+    for idx, result in enumerate(results):
+         # Use fast fallback summary for streaming context (no new LLM calls)
+         summary = summarize(result['document'], provider, api_key, model_path, question=request.query)
+         file_name = result.get('file_name', '')
+         file_prefix = f"[From: {file_name}] " if file_name else ""
+         if summary and len(summary) > 20:
+             final_context_snippets.append(f"{file_prefix}{summary}")
+         else:
+             final_context_snippets.append(f"{file_prefix}{result['document'][:500]}")
+
+    safe_snippets = [s[:600] for s in final_context_snippets[:6]]
+    context_text = "\n\n".join(safe_snippets)
+
+    if not context_text:
+        return StreamingResponse(iter(["No relevant context found."]), media_type="text/event-stream")
+
+    async def generate():
+        for token in stream_ai_answer(context_text, request.query, provider, api_key, model_path, tensor_split):
+            yield token
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 @app.get("/api/search/history")
 async def get_search_history():

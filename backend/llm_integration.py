@@ -280,6 +280,77 @@ def generate_ai_answer(context, question, provider, api_key=None, model_path=Non
         print(f"Generation error ({provider}): {e}")
         return f"Error generating answer: {str(e)}"
 
+def stream_ai_answer(context, question, provider, api_key=None, model_path=None, tensor_split=None):
+    """
+    Generator that yields tokens for the AI answer.
+    """
+    # Get client
+    client = get_llm_client(provider, api_key, model_path)
+    if not client:
+        yield "Error: Could not initialize AI model. Check settings and API keys."
+        return
+
+    prompt_text = f"""You are a document search assistant. Answer the question using ONLY facts from the provided documents.
+
+    IMPORTANT:
+    1. Check Names: If the question is about a specific person (e.g., 'Siddhesh'), ensure you ONLY use documents describing that exact person. Do NOT confuse them with similar names like 'Siddharth'.
+    2. Quote specific content, data, numbers, or key details from the documents.
+    3. Reference which file the information comes from when possible.
+    4. If the documents do not contain information for the specific person requested, state that clearly.
+
+    Documents:
+    {context}
+
+    Question: {question}
+
+    Answer (cite specific details from the documents):"""
+
+    try:
+        # Handle Local LLM (LlamaCpp)
+        if isinstance(client, str) and client.startswith("LOCAL:"):
+            real_model_path = client.split("LOCAL:")[1]
+            llm = get_local_llm(real_model_path, tensor_split=tensor_split)
+            if not llm:
+                yield "Error: Local model failed to load."
+                return
+
+            MAX_CONTEXT_CHARS = 10000
+            if len(context) > MAX_CONTEXT_CHARS:
+                context = context[:MAX_CONTEXT_CHARS] + "... [Truncated to fit context window]"
+
+            with _local_llm_lock:
+                stream = llm.create_completion(
+                    prompt_text,
+                    max_tokens=512,
+                    stop=["System:", "Question:", "Context:", "Documents:"],
+                    echo=False,
+                    temperature=0.2,
+                    repeat_penalty=1.1,
+                    stream=True  # ENABLE STREAMING
+                )
+
+                for output in stream:
+                    token = output['choices'][0]['text']
+                    yield token
+
+        # Handle LangChain Clients (Cloud)
+        else:
+            from langchain_core.messages import HumanMessage, SystemMessage
+
+            messages = [
+                SystemMessage(content="""You are a precise document search assistant.
+                CRITICAL: You must distinguish between similar names. If the question asks about 'Siddhesh', do NOT provide info about 'Siddharth'.
+                Only answer based on the provided documents. Quote facts and reference file names."""),
+                HumanMessage(content=f"Documents:\n{context}\n\nQuestion: {question}\n\nAnswer:")
+            ]
+
+            for chunk in client.stream(messages):
+                 yield chunk.content
+
+    except Exception as e:
+        print(f"Streaming error ({provider}): {e}")
+        yield f"Error generating answer: {str(e)}"
+
 # -----------------------------------------------------------------------------
 # Caching Wrappers
 # -----------------------------------------------------------------------------

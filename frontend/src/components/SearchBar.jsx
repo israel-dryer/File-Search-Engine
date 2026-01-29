@@ -1,10 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Search, Loader2, Bot, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const SearchBar = ({ onSearch, isLoading, isAgentMode, onToggleAgent }) => {
     const [query, setQuery] = useState('');
     const [isFocused, setIsFocused] = useState(false);
+    const [shortcutHint, setShortcutHint] = useState('Ctrl + K');
+    const inputRef = useRef(null);
+
+    useEffect(() => {
+        // Detect platform for correct shortcut hint
+        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+        setShortcutHint(isMac ? '⌘K' : 'Ctrl + K');
+
+        const handleKeyDown = (e) => {
+            // Cmd+K or Ctrl+K
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                inputRef.current?.focus();
+            }
+            // Slash key (/)
+            if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                inputRef.current?.focus();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -31,7 +55,9 @@ const SearchBar = ({ onSearch, isLoading, isAgentMode, onToggleAgent }) => {
 
                     {/* Input Field */}
                     <input
+                        ref={inputRef}
                         type="text"
+                        aria-label="Search query"
                         className="w-full bg-transparent py-4 pl-14 pr-32 text-base placeholder:text-muted-foreground/70 focus:outline-none"
                         placeholder={isAgentMode ? "Ask the AI Researcher a complex question..." : "Search your documents..."}
                         value={query}
@@ -41,6 +67,15 @@ const SearchBar = ({ onSearch, isLoading, isAgentMode, onToggleAgent }) => {
                         disabled={isLoading}
                     />
 
+                    {/* Keyboard Shortcut Hint */}
+                    {!isFocused && !query && (
+                        <div className="absolute right-28 pointer-events-none hidden md:flex items-center gap-1">
+                            <span className="text-xs font-medium text-muted-foreground/50 border border-border/50 rounded px-1.5 py-0.5 bg-background/50 backdrop-blur-sm">
+                                {shortcutHint}
+                            </span>
+                        </div>
+                    )}
+
                     {/* Right Side Actions */}
                     <div className="absolute right-3 flex items-center gap-2">
                         {/* Agent Mode Toggle */}
@@ -48,6 +83,7 @@ const SearchBar = ({ onSearch, isLoading, isAgentMode, onToggleAgent }) => {
                             <button
                                 type="button"
                                 onClick={onToggleAgent}
+                                aria-label="Toggle AI Agent Mode"
                                 className={`p-2 rounded-xl transition-all duration-200 ${isAgentMode
                                         ? 'bg-accent/20 text-accent border border-accent/30'
                                         : 'hover:bg-secondary text-muted-foreground'
@@ -61,6 +97,7 @@ const SearchBar = ({ onSearch, isLoading, isAgentMode, onToggleAgent }) => {
                         {/* Search Button */}
                         <button
                             type="submit"
+                            aria-label="Submit Search"
                             disabled={isLoading || !query.trim()}
                             className="p-2.5 rounded-xl btn-cosmic disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >

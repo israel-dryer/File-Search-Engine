@@ -305,6 +305,15 @@ python scripts/verify_golden_set.py
 
 > **CRITICAL: Add entry here after EVERY change with date, description, and files.**
 
+### 2026-01-30
+- **Optimized Startup Health Checks & Backend Performance**
+  - **feat**: Modified `scripts/start_all.js` with increased health check intervals (3s), longer timeouts (120s), and "localhost" binding for better Windows reliability.
+  - **feat**: Suppressed noisy health check error logs during initial startup phase.
+  - **perf**: Implemented non-blocking backend startup by moving heavy `load_index()` into an asynchronous background thread (`asyncio.to_thread`).
+  - **perf**: Implemented lazy loading for heavy backend modules (`langchain`, `llama-cpp`, `tkinter`) to reduce initial Python process cold-start time.
+  - **feat**: Added dedicated lightweight `/api/health` endpoint for reliable service readiness verification.
+  - **Files**: `scripts/start_all.js`, `backend/api.py`
+
 ### 2026-01-28
 - **Fixed Duplicate Search Results & Context Window Overflow**
   - **fix**: Improved search deduplication to strict "one result per file" + content hashing to eliminate near-duplicates

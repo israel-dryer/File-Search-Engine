@@ -9,8 +9,8 @@ const path = require('path');
 
 const BACKEND_PORT = 8000;
 const FRONTEND_PORT = 5173;
-const HEALTH_CHECK_INTERVAL = 1000;
-const HEALTH_CHECK_TIMEOUT = 90000;
+const HEALTH_CHECK_INTERVAL = 3000;
+const HEALTH_CHECK_TIMEOUT = 120000;
 
 const colors = {
     reset: '\x1b[0m',
@@ -40,23 +40,28 @@ function checkPort(port) {
     });
 }
 
-function healthCheck(port, path = '/') {
+function healthCheck(port, path = '/', silent = false) {
     return new Promise((resolve) => {
-        const req = http.get(`http://127.0.0.1:${port}${path}`, (res) => {
+        const req = http.get(`http://localhost:${port}${path}`, (res) => {
             if (res.statusCode >= 200 && res.statusCode < 400) {
                 resolve(true);
             } else {
-                log('Health', colors.yellow, `Service on port ${port} returned status ${res.statusCode}`);
+                if (!silent) log('Health', colors.yellow, `Service on port ${port} returned status ${res.statusCode}`);
                 resolve(false);
             }
         });
         req.on('error', (err) => {
-            log('Health', colors.red, `Health check failed on port ${port}: ${err.message}`);
+            if (!silent) {
+                const isExpected = err.code === 'ECONNREFUSED' || err.code === 'ECONNRESET' || err.message.includes('socket hang up');
+                const color = isExpected ? colors.yellow : colors.red;
+                const msgType = isExpected ? 'Info' : 'Error';
+                log('Health', color, `${msgType} on port ${port}: ${err.message}`);
+            }
             resolve(false);
         });
-        req.setTimeout(10000, () => {
+        req.setTimeout(5000, () => {
             req.destroy();
-            log('Health', colors.red, `Health check timed out on port ${port} (exceeded 10s)`);
+            if (!silent) log('Health', colors.yellow, `Health check timed out on port ${port} (exceeded 5s)`);
             resolve(false);
         });
     });
@@ -64,8 +69,12 @@ function healthCheck(port, path = '/') {
 
 async function waitForService(name, port, checkPath, timeout) {
     const startTime = Date.now();
+    let attempt = 0;
     while (Date.now() - startTime < timeout) {
-        const isReady = await healthCheck(port, checkPath);
+        attempt++;
+        // Be silent for the first 10 seconds or every other attempt to reduce noise
+        const silent = (Date.now() - startTime < 15000) || (attempt % 2 !== 0);
+        const isReady = await healthCheck(port, checkPath, silent);
         if (isReady) {
             return true;
         }
@@ -182,7 +191,7 @@ async function main() {
     log('Health', colors.yellow, 'Waiting for services to become healthy...');
 
     const [backendReady, frontendReady] = await Promise.all([
-        waitForService('Backend', BACKEND_PORT, '/api/config', HEALTH_CHECK_TIMEOUT),
+        waitForService('Backend', BACKEND_PORT, '/api/health', HEALTH_CHECK_TIMEOUT),
         waitForService('Frontend', FRONTEND_PORT, '/', HEALTH_CHECK_TIMEOUT)
     ]);
 

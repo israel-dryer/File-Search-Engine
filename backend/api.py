@@ -7,9 +7,6 @@ from pydantic import BaseModel
 from typing import List, Optional
 import uvicorn
 import os
-import configparser
-import tkinter as tk
-from tkinter import filedialog
 import time
 
 # Path configuration for new folder structure
@@ -33,11 +30,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.info("--- SERVER RESTARTING (Logging Configured Early) ---")
 
-from backend.indexing import create_index, save_index, load_index
-from backend.search import search
-from backend.llm_integration import summarize, get_embeddings, generate_ai_answer, stream_ai_answer
-from backend.file_processing import extract_text
-from backend.model_manager import get_available_models, get_local_models, start_download, get_download_status
+# from backend.indexing import create_index, save_index, load_index
+# from backend.search import search
+# from backend.llm_integration import summarize, get_embeddings, generate_ai_answer, stream_ai_answer
+# from backend.file_processing import extract_text
+# from backend.model_manager import get_available_models, get_local_models, start_download, get_download_status
 from backend import database
 
 
@@ -71,6 +68,7 @@ async def health_check():
     return {"status": "ok"}
 
 def load_config():
+    import configparser
     if not os.path.exists(CONFIG_PATH):
         config = configparser.ConfigParser()
         config['General'] = {'folder': '', 'auto_index': 'False'}
@@ -92,14 +90,21 @@ def save_config_file(config):
 async def startup_event():
     logger.info("Application starting up...")
     database.init_database()
-    
+    # Load index in background to not block health checks
+    asyncio.create_task(load_initial_index())
+
+async def load_initial_index():
+    from backend.indexing import load_index
     global index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25
     if os.path.exists(INDEX_PATH):
         try:
-            index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25 = load_index(INDEX_PATH)
-            print("Loaded existing index.")
+            # load_index is a blocking call, run it in a thread
+            logger.info("Loading existing index in background...")
+            res = await asyncio.to_thread(load_index, INDEX_PATH)
+            index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25 = res
+            logger.info("Loaded existing index successfully.")
         except Exception as e:
-            print(f"Error loading index: {e}")
+            logger.error(f"Error loading index: {e}")
             index = None
             docs = []
             tags = []
@@ -111,6 +116,8 @@ async def startup_event():
 @app.get("/api/browse")
 async def browse_folder():
     """Open a folder browser dialog and return the selected path."""
+    import tkinter as tk
+    from tkinter import filedialog
     try:
         # Create a hidden root window
         root = tk.Tk()
@@ -129,14 +136,17 @@ async def browse_folder():
 
 @app.get("/api/models/available")
 async def list_available_models():
+    from backend.model_manager import get_available_models
     return get_available_models()
 
 @app.get("/api/models/local")
 async def list_local_models():
+    from backend.model_manager import get_local_models
     return get_local_models()
 
 @app.post("/api/models/download/{model_id}")
 async def download_model_endpoint(model_id: str):
+    from backend.model_manager import start_download
     success, message = start_download(model_id)
     if not success:
         raise HTTPException(status_code=400, detail=message)
@@ -144,6 +154,7 @@ async def download_model_endpoint(model_id: str):
 
 @app.get("/api/models/status")
 async def download_status_endpoint():
+    from backend.model_manager import get_download_status
     return get_download_status()
 
 @app.delete("/api/models/delete")
@@ -329,6 +340,8 @@ async def update_config(config_data: ConfigModel):
 
 @app.post("/api/search")
 async def search_files(request: SearchRequest):
+    from backend.search import search
+    from backend.llm_integration import get_embeddings
     global index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25
     
     if not index:
@@ -371,7 +384,7 @@ async def search_files(request: SearchRequest):
                 tensor_split = [float(x) for x in tensor_split_str.split(',')]
             except:
                 pass
-        from backend.llm_integration import cached_smart_summary, cached_generate_ai_answer, summarize
+        from backend.llm_integration import cached_smart_summary, cached_generate_ai_answer, summarize, get_embeddings
 
         # Run Search
         results, context_snippets = search(
@@ -479,6 +492,8 @@ async def stream_answer_endpoint(request: SearchRequest):
         except:
             pass
 
+    from backend.llm_integration import summarize, stream_ai_answer, get_embeddings
+    
     # Re-run search to get context
     results, context_snippets = search(
         request.query, index, docs, tags,
@@ -756,6 +771,7 @@ async def agent_chat(query: str):
 def run_indexing(config, folders):
     global index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25, indexing_status
     
+    from backend.indexing import create_index, save_index
     provider = config.get('LocalLLM', 'provider', fallback='openai')
     api_key = config.get('APIKeys', 'openai_api_key', fallback=None)
     model_path = config.get('LocalLLM', 'model_path', fallback=None)

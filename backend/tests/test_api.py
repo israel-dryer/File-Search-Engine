@@ -317,9 +317,11 @@ class TestAPIFileOperations(unittest.TestCase):
             data = response.json()
             self.assertFalse(data['valid'])
 
-    @patch('os.startfile')
-    def test_open_file(self, mock_startfile):
+    @patch('backend.database.get_file_by_path')
+    @patch('os.startfile', create=True)
+    def test_open_file(self, mock_startfile, mock_get_file):
         """Test opening a file."""
+        mock_get_file.return_value = {'path': '/test/document.pdf'}
         with patch('os.path.exists', return_value=True):
             response = self.client.post("/api/open-file", json={
                 "path": "/test/document.pdf"

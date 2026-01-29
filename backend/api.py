@@ -632,9 +632,15 @@ async def open_file(request: dict):
     # Normalize path - fix mixed slashes from FAISS metadata
     file_path = os.path.normpath(file_path)
     
+    # Security: Only allow opening files that are in the index
+    # This prevents opening arbitrary files on the system
+    if not database.get_file_by_path(file_path):
+        logger.warning(f"Security: Attempt to open non-indexed file: {file_path}")
+        raise HTTPException(status_code=403, detail="Access denied: File is not in the index")
+
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
-    
+
     try:
         import subprocess
         import platform

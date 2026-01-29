@@ -1,0 +1,71 @@
+
+import unittest
+import os
+import tempfile
+from fastapi.testclient import TestClient
+from backend.api import app
+from unittest.mock import patch
+
+class TestSecurityRepro(unittest.TestCase):
+    def setUp(self):
+        self.client = TestClient(app)
+        # Create a temporary file OUTSIDE the models directory
+        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
+        self.temp_file.close()
+        self.temp_path = self.temp_file.name
+
+    def tearDown(self):
+        # Clean up if the test didn't delete it
+        if os.path.exists(self.temp_path):
+            os.remove(self.temp_path)
+
+    def test_arbitrary_file_deletion_prevention(self):
+        """
+        Verify that deleting a file OUTSIDE the models directory fails.
+        """
+        print(f"Attempting to delete: {self.temp_path}")
+
+        response = self.client.request(
+            "DELETE",
+            "/api/models/delete",
+            json={"path": self.temp_path}
+        )
+
+        # Check if the file still exists
+        file_exists = os.path.exists(self.temp_path)
+
+        if file_exists:
+            print("SUCCESS: Arbitrary file deletion was blocked.")
+        else:
+            print("FAILURE: Arbitrary file was deleted.")
+
+        # In our implementation, delete_model returns False if unsafe,
+        # causing 404 "Model file not found"
+        self.assertEqual(response.status_code, 404, "Should return 404 for unsafe path")
+        self.assertTrue(file_exists, "File should NOT be deleted")
+
+    @patch('backend.database.get_file_by_path')
+    def test_open_file_security(self, mock_get_file):
+        """
+        Verify that opening a non-indexed file is forbidden.
+        """
+        # 1. Try to open a file NOT in database
+        mock_get_file.return_value = None
+
+        response = self.client.post("/api/open-file", json={"path": self.temp_path})
+
+        self.assertEqual(response.status_code, 403, "Should deny access to non-indexed file")
+        self.assertIn("Access denied", response.json()['detail'])
+
+        # 2. Try to open a file IN database
+        mock_get_file.return_value = {'path': self.temp_path}
+
+        # We need to mock os.startfile or subprocess to avoid actually opening it
+        # os.startfile is Windows only, subprocess.run is for Mac/Linux
+        with patch('os.startfile', create=True) as mock_startfile, \
+             patch('subprocess.run') as mock_run:
+                 response = self.client.post("/api/open-file", json={"path": self.temp_path})
+                 self.assertEqual(response.status_code, 200, "Should allow indexed file")
+
+if __name__ == '__main__':
+    unittest.main()

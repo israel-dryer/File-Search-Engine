@@ -10,7 +10,6 @@ class IndexingEventHandler(FileSystemEventHandler):
         self.provider = provider
         self.api_key = api_key
         self.model_path = model_path
-        self.update_index()
 
     def on_modified(self, event):
         self.update_index()
@@ -40,6 +39,7 @@ def start_background_indexing():
         model_path = config.get('LocalLLM', 'model_path', fallback=None)
 
         event_handler = IndexingEventHandler(folder, provider, api_key, model_path)
+        event_handler.update_index()
         observer = Observer()
         observer.schedule(event_handler, folder, recursive=True)
         observer.start()

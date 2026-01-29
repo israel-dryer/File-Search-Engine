@@ -21,16 +21,15 @@ class TestBackground(unittest.TestCase):
                 model_path=None
             )
             
-            # Verify that update_index was called during initialization
-            # Note: We can't easily test this since update_index is called in __init__
-            # We'll just verify the attributes are set correctly
+            # Verify attributes are set correctly
             self.assertEqual(handler.folder, "/test/folder")
             self.assertEqual(handler.provider, "openai")
             self.assertEqual(handler.api_key, "test_key")
             self.assertIsNone(handler.model_path)
             
-            # Verify save_index was called (since create_index returned a mock index)
-            mock_save_index.assert_called()
+            # Verify update_index was NOT called during initialization
+            mock_create_index.assert_not_called()
+            mock_save_index.assert_not_called()
     
     @patch('backend.background.create_index')
     @patch('backend.background.save_index')
@@ -45,10 +44,6 @@ class TestBackground(unittest.TestCase):
             api_key="test_key",
             model_path=None
         )
-        
-        # Reset the call count from initialization
-        mock_create_index.reset_mock()
-        mock_save_index.reset_mock()
         
         # Call update_index directly
         handler.update_index()
@@ -75,9 +70,6 @@ class TestBackground(unittest.TestCase):
             model_path=None
         )
         
-        # Reset the call count from initialization
-        mock_create_index.reset_mock()
-        
         # Call update_index directly
         handler.update_index()
         
@@ -99,10 +91,6 @@ class TestBackground(unittest.TestCase):
             api_key="test_key",
             model_path=None
         )
-        
-        # Reset the call count from initialization
-        mock_create_index.reset_mock()
-        mock_save_index.reset_mock()
         
         # Simulate on_modified event
         event = MagicMock()
@@ -126,10 +114,6 @@ class TestBackground(unittest.TestCase):
             model_path=None
         )
         
-        # Reset the call count from initialization
-        mock_create_index.reset_mock()
-        mock_save_index.reset_mock()
-        
         # Simulate on_created event
         event = MagicMock()
         handler.on_created(event)
@@ -151,10 +135,6 @@ class TestBackground(unittest.TestCase):
             api_key="test_key",
             model_path=None
         )
-        
-        # Reset the call count from initialization
-        mock_create_index.reset_mock()
-        mock_save_index.reset_mock()
         
         # Simulate on_deleted event
         event = MagicMock()

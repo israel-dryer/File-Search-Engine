@@ -127,19 +127,59 @@ function App() {
         setIsLoading(true);
         setAiAnswer("");
         setSearchResults([]);
+
         try {
+            // Stage 1: Get File List (Fast)
             const response = await axios.post('http://localhost:8000/api/search', { query });
-            setSearchResults(response.data.results || response.data);
-            if (response.data.ai_answer) {
-                setAiAnswer(response.data.ai_answer);
-            }
+            const results = response.data.results || response.data;
+            setSearchResults(results);
+
             if (response.data.active_model) {
                 const modelName = response.data.active_model.replace('.gguf', '');
                 setActiveModel(modelName);
             }
+
+            setIsLoading(false); // Show results immediately
+
+            // Stage 2: Stream AI Answer (Slow)
+            if (results.length > 0) {
+                setAiAnswer("Thinking...");
+
+                try {
+                    const streamResponse = await fetch('http://localhost:8000/api/stream-answer', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query })
+                    });
+
+                    if (streamResponse.body) {
+                        const reader = streamResponse.body.getReader();
+                        const decoder = new TextDecoder();
+                        let accumulatedAnswer = "";
+                        let isFirstChunk = true;
+
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+
+                            const chunk = decoder.decode(value, { stream: true });
+
+                            if (isFirstChunk) {
+                                accumulatedAnswer = "";
+                                isFirstChunk = false;
+                            }
+
+                            accumulatedAnswer += chunk;
+                            setAiAnswer(accumulatedAnswer);
+                        }
+                    }
+                } catch (streamError) {
+                    console.error("Streaming failed:", streamError);
+                    setAiAnswer(""); // Clear if failed
+                }
+            }
         } catch (error) {
             console.error('Search failed:', error);
-        } finally {
             setIsLoading(false);
         }
     };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ExternalLink, File, Sparkles, FileText, Image, Table, Presentation, Brain } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
@@ -20,64 +20,68 @@ const getFileIcon = (fileName) => {
     }
 };
 
+const handleOpenFile = async (filePath) => {
+    try {
+        await axios.post('http://localhost:8000/api/open-file', { path: filePath });
+    } catch (error) {
+        console.error('Failed to open file:', error);
+    }
+};
+
 const SearchResults = ({ results, aiAnswer }) => {
     if (!results.length && !aiAnswer) return null;
 
-    const handleOpenFile = async (filePath) => {
-        try {
-            await axios.post('http://localhost:8000/api/open-file', { path: filePath });
-        } catch (error) {
-            console.error('Failed to open file:', error);
-        }
-    };
+    const resultsList = useMemo(() => {
+        return results.map((result, index) => (
+            <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                className="result-card group/card cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                onClick={() => result.file_path && handleOpenFile(result.file_path)}
+            >
+                {/* File Header */}
+                {result.file_name && (
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-secondary/20 group-hover/card:bg-secondary/30 transition-colors">
+                        <div className="flex items-center gap-3 text-sm font-medium text-foreground/90">
+                            <div className="p-1.5 rounded-lg bg-secondary/50 transition-colors">
+                                {getFileIcon(result.file_name)}
+                            </div>
+                            <span className="truncate max-w-[300px]">{result.file_name}</span>
+                        </div>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenFile(result.file_path);
+                            }}
+                            className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                            title="Open file externally"
+                        >
+                            <ExternalLink className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
+
+                {/* Content Preview */}
+                <div className="p-4">
+                    <p className="text-sm text-foreground/80 leading-relaxed line-clamp-4">
+                        {result.document}
+                    </p>
+
+                    {/* Tags */}
+                    {/* Tags Removed per user request */}
+                </div>
+            </motion.div>
+        ));
+    }, [results]);
 
     return (
         <div className="w-full mt-8 pb-20">
             <div className="flex gap-6">
                 {/* Main Results Column */}
                 <div className="flex-1 space-y-4">
-                    {results.map((result, index) => (
-                        <motion.div
-                            key={index}
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: index * 0.05 }}
-                            className="result-card group/card cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                            onClick={() => result.file_path && handleOpenFile(result.file_path)}
-                        >
-                            {/* File Header */}
-                            {result.file_name && (
-                                <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-secondary/20 group-hover/card:bg-secondary/30 transition-colors">
-                                    <div className="flex items-center gap-3 text-sm font-medium text-foreground/90">
-                                        <div className="p-1.5 rounded-lg bg-secondary/50 transition-colors">
-                                            {getFileIcon(result.file_name)}
-                                        </div>
-                                        <span className="truncate max-w-[300px]">{result.file_name}</span>
-                                    </div>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleOpenFile(result.file_path);
-                                        }}
-                                        className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
-                                        title="Open file externally"
-                                    >
-                                        <ExternalLink className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Content Preview */}
-                            <div className="p-4">
-                                <p className="text-sm text-foreground/80 leading-relaxed line-clamp-4">
-                                    {result.document}
-                                </p>
-
-                                {/* Tags */}
-                                {/* Tags Removed per user request */}
-                            </div>
-                        </motion.div>
-                    ))}
+                    {resultsList}
                 </div>
 
                 {/* AI Insights Sidebar */}

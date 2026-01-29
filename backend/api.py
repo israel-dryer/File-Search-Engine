@@ -8,6 +8,7 @@ from typing import List, Optional
 import uvicorn
 import os
 import time
+import configparser
 
 # Path configuration for new folder structure
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -30,11 +31,66 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.info("--- SERVER RESTARTING (Logging Configured Early) ---")
 
-# from backend.indexing import create_index, save_index, load_index
-# from backend.search import search
-# from backend.llm_integration import summarize, get_embeddings, generate_ai_answer, stream_ai_answer
-# from backend.file_processing import extract_text
-# from backend.model_manager import get_available_models, get_local_models, start_download, get_download_status
+# --- Lazy Loading Helpers ---
+# These functions allow us to defer heavy imports while keeping tests patchable at the module level
+
+def get_embeddings(*args, **kwargs):
+    from backend.llm_integration import get_embeddings as _get_embeddings
+    return _get_embeddings(*args, **kwargs)
+
+def summarize(*args, **kwargs):
+    from backend.llm_integration import summarize as _summarize
+    return _summarize(*args, **kwargs)
+
+def search(*args, **kwargs):
+    from backend.search import search as _search
+    return _search(*args, **kwargs)
+
+def create_index(*args, **kwargs):
+    from backend.indexing import create_index as _create_index
+    return _create_index(*args, **kwargs)
+
+def save_index(*args, **kwargs):
+    from backend.indexing import save_index as _save_index
+    return _save_index(*args, **kwargs)
+
+def load_index(*args, **kwargs):
+    from backend.indexing import load_index as _load_index
+    return _load_index(*args, **kwargs)
+
+def smart_summary(*args, **kwargs):
+    from backend.llm_integration import smart_summary as _smart_summary
+    return _smart_summary(*args, **kwargs)
+
+def cached_smart_summary(*args, **kwargs):
+    from backend.llm_integration import cached_smart_summary as _cached_smart_summary
+    return _cached_smart_summary(*args, **kwargs)
+
+def cached_generate_ai_answer(*args, **kwargs):
+    from backend.llm_integration import cached_generate_ai_answer as _cached_generate_ai_answer
+    return _cached_generate_ai_answer(*args, **kwargs)
+
+def stream_ai_answer(*args, **kwargs):
+    from backend.llm_integration import stream_ai_answer as _stream_ai_answer
+    return _stream_ai_answer(*args, **kwargs)
+
+def get_available_models(*args, **kwargs):
+    from backend.model_manager import get_available_models as _get_available_models
+    return _get_available_models(*args, **kwargs)
+
+def get_local_models(*args, **kwargs):
+    from backend.model_manager import get_local_models as _get_local_models
+    return _get_local_models(*args, **kwargs)
+
+def start_download(*args, **kwargs):
+    from backend.model_manager import start_download as _start_download
+    return _start_download(*args, **kwargs)
+
+def get_download_status(*args, **kwargs):
+    from backend.model_manager import get_download_status as _get_download_status
+    return _get_download_status(*args, **kwargs)
+
+# -----------------------------
 from backend import database
 
 
@@ -94,7 +150,6 @@ async def startup_event():
     asyncio.create_task(load_initial_index())
 
 async def load_initial_index():
-    from backend.indexing import load_index
     global index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25
     if os.path.exists(INDEX_PATH):
         try:
@@ -136,17 +191,14 @@ async def browse_folder():
 
 @app.get("/api/models/available")
 async def list_available_models():
-    from backend.model_manager import get_available_models
     return get_available_models()
 
 @app.get("/api/models/local")
 async def list_local_models():
-    from backend.model_manager import get_local_models
     return get_local_models()
 
 @app.post("/api/models/download/{model_id}")
 async def download_model_endpoint(model_id: str):
-    from backend.model_manager import start_download
     success, message = start_download(model_id)
     if not success:
         raise HTTPException(status_code=400, detail=message)
@@ -154,7 +206,6 @@ async def download_model_endpoint(model_id: str):
 
 @app.get("/api/models/status")
 async def download_status_endpoint():
-    from backend.model_manager import get_download_status
     return get_download_status()
 
 @app.delete("/api/models/delete")
@@ -340,8 +391,6 @@ async def update_config(config_data: ConfigModel):
 
 @app.post("/api/search")
 async def search_files(request: SearchRequest):
-    from backend.search import search
-    from backend.llm_integration import get_embeddings
     global index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25
     
     if not index:
@@ -384,7 +433,6 @@ async def search_files(request: SearchRequest):
                 tensor_split = [float(x) for x in tensor_split_str.split(',')]
             except:
                 pass
-        from backend.llm_integration import cached_smart_summary, cached_generate_ai_answer, summarize, get_embeddings
 
         # Run Search
         results, context_snippets = search(
@@ -492,8 +540,6 @@ async def stream_answer_endpoint(request: SearchRequest):
         except:
             pass
 
-    from backend.llm_integration import summarize, stream_ai_answer, get_embeddings
-    
     # Re-run search to get context
     results, context_snippets = search(
         request.query, index, docs, tags,
@@ -771,7 +817,6 @@ async def agent_chat(query: str):
 def run_indexing(config, folders):
     global index, docs, tags, index_summaries, cluster_summaries, cluster_map, bm25, indexing_status
     
-    from backend.indexing import create_index, save_index
     provider = config.get('LocalLLM', 'provider', fallback='openai')
     api_key = config.get('APIKeys', 'openai_api_key', fallback=None)
     model_path = config.get('LocalLLM', 'model_path', fallback=None)

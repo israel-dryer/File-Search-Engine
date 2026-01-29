@@ -60,6 +60,7 @@ const SearchResults = ({ results, aiAnswer }) => {
                                             handleOpenFile(result.file_path);
                                         }}
                                         className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                                        title="Open file externally"
                                     >
                                         <ExternalLink className="w-4 h-4" />
                                     </button>

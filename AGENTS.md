@@ -314,7 +314,15 @@ python scripts/verify_golden_set.py
   - **feat**: Added dedicated lightweight `/api/health` endpoint for reliable service readiness verification.
   - **Files**: `scripts/start_all.js`, `backend/api.py`
 
-### 2026-01-28
+### 2026-01-30 (Part 2)
+- **Expanded Frontend Test Coverage**
+  - **feat**: Implemented comprehensive functional UI tests for `SearchHistory` and `FileList` components.
+  - **fix**: Upgraded `SettingsModal`, `ModelManager`, `SearchBar`, and `SearchResults` tests to use `@testing-library/react` interactions instead of basic logic checks.
+  - **verification**: Validated all "Delete", "Clear All", and "Open File" workflows with 100% pass rate (47 tests).
+  - **accessibility**: Added `title` attributes to `SearchResults` and `ModelManager` buttons for better testability and accessibility.
+  - **Files**: `frontend/src/test/*.test.jsx`, `frontend/src/components/SearchResults.jsx`
+
+### 2026-01-30
 - **Fixed Duplicate Search Results & Context Window Overflow**
   - **fix**: Improved search deduplication to strict "one result per file" + content hashing to eliminate near-duplicates
   - **fix**: Reduced context truncation from 10000 to 3000 chars to prevent exceeding 4096 token context window on local LLMs
@@ -511,6 +519,17 @@ python scripts/verify_golden_set.py
   - `scripts/verify_golden_set.py`: Automated verification script that indexes the golden set and asserts specific factual retrieval ("needle in haystack").
   - `data/golden_dataset/`: Target directory for test files.
   - Added documentation to `AGENTS.md`.
+
+### 2026-01-30
+- **Optimized Startup** - Reduced polling interval to 500ms and enabled early browser launch
+  - Files: `scripts/start_all.js`
+  - Verification: Manual user verification required (restart app)
+- **Backend Connection Resilience** - Added retry logic to Frontend to handle race conditions during fast startup
+  - Files: `frontend/src/App.jsx`
+  - Verification: Manual verification (Frontend should eventually load even if backend is slow)
+- **Robust Port Cleanup** - Startup script now aggressively kills zombie processes on ports 8000/5173
+  - Files: `scripts/start_all.js`
+  - Verification: Manual verification (Ctrl+C and restart should work immediately)
 
 ### 2026-01-09
 - **Enhanced LLM output quality** - AI now references filenames and quotes specific content

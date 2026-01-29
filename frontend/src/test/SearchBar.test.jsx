@@ -1,108 +1,42 @@
 /**
  * SearchBar Component Tests
  * 
- * Tests for the SearchBar component including input handling,
- * search submission, and keyboard interaction.
+ * Functional tests for the SearchBar component.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import SearchBar from '../components/SearchBar'
 
-// Mock component behavior tests
 describe('SearchBar Component', () => {
-    describe('Input Handling', () => {
-        it('should accept text input', () => {
-            const searchValue = 'test query'
-            let inputValue = ''
+    it('updates input value when typing', () => {
+        render(<SearchBar onSearch={vi.fn()} />)
 
-            // Simulate input change
-            inputValue = searchValue
+        const input = screen.getByPlaceholderText(/search/i)
+        fireEvent.change(input, { target: { value: 'machine learning' } })
 
-            expect(inputValue).toBe('test query')
-        })
-
-        it('should trim whitespace from query', () => {
-            const rawQuery = '  test query  '
-            const cleanQuery = rawQuery.trim()
-
-            expect(cleanQuery).toBe('test query')
-        })
-
-        it('should reject empty queries', () => {
-            const isValidQuery = (query) => query.trim().length > 0
-
-            expect(isValidQuery('')).toBe(false)
-            expect(isValidQuery('   ')).toBe(false)
-            expect(isValidQuery('valid')).toBe(true)
-        })
+        expect(input.value).toBe('machine learning')
     })
 
-    describe('Search Submission', () => {
-        it('should trigger search callback on submit', () => {
-            const mockOnSearch = vi.fn()
-            const query = 'test search'
+    it('triggers onSearch when form is submitted', () => {
+        const onSearch = vi.fn()
+        render(<SearchBar onSearch={onSearch} />)
 
-            // Simulate form submission
-            mockOnSearch(query)
+        const input = screen.getByPlaceholderText(/search/i)
+        fireEvent.change(input, { target: { value: 'neural networks' } })
 
-            expect(mockOnSearch).toHaveBeenCalledWith('test search')
-            expect(mockOnSearch).toHaveBeenCalledTimes(1)
-        })
+        fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' })
 
-        it('should not submit empty queries', () => {
-            const mockOnSearch = vi.fn()
-            const query = ''
+        // Use form submit if available
+        const form = input.closest('form')
+        if (form) fireEvent.submit(form)
 
-            // Only call if valid
-            if (query.trim()) {
-                mockOnSearch(query)
-            }
-
-            expect(mockOnSearch).not.toHaveBeenCalled()
-        })
-
-        it('should handle Enter key press', () => {
-            const mockSubmit = vi.fn()
-            const event = { key: 'Enter', preventDefault: vi.fn() }
-
-            if (event.key === 'Enter') {
-                event.preventDefault()
-                mockSubmit()
-            }
-
-            expect(mockSubmit).toHaveBeenCalled()
-            expect(event.preventDefault).toHaveBeenCalled()
-        })
+        expect(onSearch).toHaveBeenCalledWith('neural networks')
     })
 
-    describe('Loading State', () => {
-        it('should disable input during search', () => {
-            let isLoading = false
-
-            // Start search
-            isLoading = true
-            expect(isLoading).toBe(true)
-
-            // Complete search
-            isLoading = false
-            expect(isLoading).toBe(false)
-        })
-
-        it('should show loading indicator during search', () => {
-            const loading = true
-            const buttonText = loading ? 'Searching...' : 'Search'
-
-            expect(buttonText).toBe('Searching...')
-        })
-    })
-
-    describe('Clear Functionality', () => {
-        it('should clear input on clear button click', () => {
-            let query = 'some text'
-
-            // Clear action
-            query = ''
-
-            expect(query).toBe('')
-        })
+    it('shows loading state', () => {
+        render(<SearchBar isLoading={true} onSearch={vi.fn()} />)
+        const input = screen.getByPlaceholderText(/search/i)
+        expect(input.disabled).toBe(true)
     })
 })

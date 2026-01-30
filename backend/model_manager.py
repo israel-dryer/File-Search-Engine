@@ -570,8 +570,37 @@ def start_download(model_id):
 def get_download_status():
     return download_status
 
+def is_safe_model_path(path):
+    """
+    Validate that the path is strictly within the MODELS_DIR.
+    Prevents path traversal and arbitrary file operations.
+    """
+    if not path:
+        return False
+
+    try:
+        # Resolve absolute paths
+        abs_path = os.path.abspath(path)
+        abs_models_dir = os.path.abspath(MODELS_DIR)
+
+        # Check if path is within MODELS_DIR
+        # os.path.commonpath returns the longest common sub-path
+        # We ensure the common path IS the models directory
+        common = os.path.commonpath([abs_path, abs_models_dir])
+
+        # 1. Must be inside models dir
+        # 2. Must not BE the models dir itself (prevent deleting the folder)
+        return common == abs_models_dir and abs_path != abs_models_dir
+
+    except Exception:
+        return False
+
 def delete_model(model_path):
     """Delete a downloaded model file."""
+    if not is_safe_model_path(model_path):
+        print(f"Security Warning: Attempt to delete unsafe path: {model_path}")
+        return False
+
     if os.path.exists(model_path):
         os.remove(model_path)
         return True

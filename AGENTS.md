@@ -305,6 +305,12 @@ python scripts/verify_golden_set.py
 
 > **CRITICAL: Add entry here after EVERY change with date, description, and files.**
 
+### 2026-01-30 (Security)
+- **Fixed Arbitrary File Deletion Vulnerability**
+  - **fix**: Implemented `is_safe_model_path` validation in `model_manager.py` to prevent path traversal in model deletion.
+  - **test**: Added `backend/tests/test_security.py` with regression tests.
+  - **Files**: `backend/model_manager.py`, `backend/tests/test_security.py`, `scripts/run_tests.py`
+
 ### 2026-01-30
 - **Optimized Startup Health Checks & Backend Performance**
   - **feat**: Modified `scripts/start_all.js` with increased health check intervals (3s), longer timeouts (120s), and "localhost" binding for better Windows reliability.

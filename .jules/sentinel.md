@@ -1,0 +1,4 @@
+## 2026-02-01 - [Arbitrary File Deletion in Model Manager]
+**Vulnerability:** The `delete_model` function in `backend/model_manager.py` accepted an absolute file path directly from the API request and passed it to `os.remove` without validation. This allowed an attacker to delete any file on the system (e.g., `/etc/passwd`) by providing its path.
+**Learning:** The vulnerability existed because the API endpoint relied on the frontend to provide the correct path, assuming good intent. The tests (`test_model_manager.py`) verified other aspects of the module but completely missed the `delete_model` function, leaving the vulnerability exposed.
+**Prevention:** Always validate file paths against a whitelist or a base directory using `os.path.commonpath` (wrapped in a `is_safe_path` helper). Never trust file paths from user input. Ensure unit tests cover all public functions, especially those performing destructive actions like deletion.

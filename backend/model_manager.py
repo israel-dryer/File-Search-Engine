@@ -570,9 +570,37 @@ def start_download(model_id):
 def get_download_status():
     return download_status
 
+def is_safe_path(base_dir, path, follow_symlinks=True):
+    """
+    Check if the path is safely inside the base directory.
+    Prevents directory traversal attacks.
+    """
+    # Resolve full absolute paths
+    if follow_symlinks:
+        match = os.path.realpath(path)
+        base = os.path.realpath(base_dir)
+    else:
+        match = os.path.abspath(path)
+        base = os.path.abspath(base_dir)
+
+    # os.path.commonpath ensures we are comparing directory structures correctly
+    return os.path.commonpath([base, match]) == base
+
 def delete_model(model_path):
     """Delete a downloaded model file."""
+    if not model_path:
+        return False
+
+    # Security: Verify path is strictly within the models directory
+    if not is_safe_path(MODELS_DIR, model_path):
+        print(f"Security Alert: Attempted to delete file outside models directory: {model_path}")
+        return False
+
     if os.path.exists(model_path):
-        os.remove(model_path)
-        return True
+        try:
+            os.remove(model_path)
+            return True
+        except OSError as e:
+            print(f"Error deleting model: {e}")
+            return False
     return False

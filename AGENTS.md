@@ -543,6 +543,12 @@ python scripts/verify_golden_set.py
   - `frontend/src/test/SearchBar.test.jsx`, `SearchResults.test.jsx`, `SettingsModal.test.jsx`, `ModelManager.test.jsx`
 - **Created AGENTS.md** - Workspace instructions
 
+### 2026-02-01
+- **Security Fix: Arbitrary File Deletion in Model Manager**
+  - **fix**: Patched `delete_model` in `backend/model_manager.py` to use `is_safe_path` validation, preventing path traversal attacks.
+  - **test**: Added comprehensive security tests in `backend/tests/test_security_fix.py`.
+  - **Files**: `backend/model_manager.py`, `backend/tests/test_security_fix.py`
+
 ### Entry Template
 ```
 ### YYYY-MM-DD

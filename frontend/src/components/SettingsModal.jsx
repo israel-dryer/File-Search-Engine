@@ -52,6 +52,17 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
         }
     }, [isOpen]);
 
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && isOpen) {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     const fetchConfig = async () => {
         try {
             const response = await axios.get('http://localhost:8000/api/config');
@@ -222,7 +233,12 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onClose();
+            }}
+        >
             <div className="glass-overlay w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-2xl shadow-2xl">
                 {/* Header */}
                 <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-border/30 bg-background/80 backdrop-blur-md">
@@ -232,7 +248,11 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                         </div>
                         Settings
                     </h2>
-                    <button onClick={onClose} className="p-2 rounded-xl hover:bg-secondary transition-colors">
+                    <button
+                        onClick={onClose}
+                        className="p-2 rounded-xl hover:bg-secondary transition-colors"
+                        aria-label="Close settings"
+                    >
                         <X className="w-4 h-4" />
                     </button>
                 </div>
@@ -336,6 +356,7 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                                                                     onClick={(e) => handleRemoveFromHistory(folder, e)}
                                                                     className="p-1 rounded hover:bg-destructive/20 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                                                                     title="Remove from history"
+                                                                    aria-label={`Remove ${folder} from history`}
                                                                 >
                                                                     <Trash2 className="w-3 h-3" />
                                                                 </button>
@@ -367,6 +388,7 @@ const SettingsModal = ({ isOpen, onClose, onSave, activeModel }) => {
                                         <button
                                             onClick={() => handleRemoveFolder(folder)}
                                             className="p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                                            aria-label={`Remove ${folder} from index`}
                                         >
                                             <Trash2 className="w-3.5 h-3.5" />
                                         </button>

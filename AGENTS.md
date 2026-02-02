@@ -543,6 +543,13 @@ python scripts/verify_golden_set.py
   - `frontend/src/test/SearchBar.test.jsx`, `SearchResults.test.jsx`, `SettingsModal.test.jsx`, `ModelManager.test.jsx`
 - **Created AGENTS.md** - Workspace instructions
 
+### 2026-02-02
+- **Integrated Sentinel Security Fixes (Branch 3)**
+  - **feat**: Merged `sentinel-model-manager-fix` which generalizes path validation logic (`is_safe_path`).
+  - **fix**: Resolved conflict in `backend/model_manager.py` adopting the more robust security check.
+  - **Files**: `backend/model_manager.py`
+  - **Verification**: Tests passed on branch before merge.
+
 ### Entry Template
 ```
 ### YYYY-MM-DD

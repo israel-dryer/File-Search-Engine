@@ -570,32 +570,37 @@ def start_download(model_id):
 def get_download_status():
     return download_status
 
-def is_safe_path(path, base_dir):
-    """Check if the resolved path is within the base directory."""
-    try:
-        # Resolve absolute paths to handle .. and symlinks
-        abs_path = os.path.abspath(path)
-        abs_base = os.path.abspath(base_dir)
+def is_safe_path(base_dir, path, follow_symlinks=True):
+    """
+    Check if the path is safely inside the base directory.
+    Prevents directory traversal attacks.
+    """
+    # Resolve full absolute paths
+    if follow_symlinks:
+        match = os.path.realpath(path)
+        base = os.path.realpath(base_dir)
+    else:
+        match = os.path.abspath(path)
+        base = os.path.abspath(base_dir)
 
-        # Ensure we are comparing valid paths and path is inside base
-        # os.path.commonpath handles separators correctly
-        return os.path.commonpath([abs_base, abs_path]) == abs_base
-    except Exception as e:
-        print(f"Path validation error: {e}")
-        return False
+    # os.path.commonpath ensures we are comparing directory structures correctly
+    return os.path.commonpath([base, match]) == base
 
 def delete_model(model_path):
     """Delete a downloaded model file."""
-    # Security check: Ensure path is within the models directory
-    if not is_safe_path(model_path, MODELS_DIR):
-        print(f"SECURITY ALERT: Blocked attempt to delete file outside models directory: {model_path}")
+    if not model_path:
+        return False
+
+    # Security: Verify path is strictly within the models directory
+    if not is_safe_path(MODELS_DIR, model_path):
+        print(f"Security Alert: Attempted to delete file outside models directory: {model_path}")
         return False
 
     if os.path.exists(model_path):
         try:
             os.remove(model_path)
             return True
-        except Exception as e:
+        except OSError as e:
             print(f"Error deleting model: {e}")
             return False
     return False

@@ -1,66 +1,91 @@
-import unittest
-import sys
+import pytest
 import os
-from unittest.mock import MagicMock
+import tempfile
+import shutil
+from backend.model_manager import delete_model, is_safe_path
 
-# Mock dependencies if they are missing
-if 'requests' not in sys.modules:
-    sys.modules['requests'] = MagicMock()
-if 'psutil' not in sys.modules:
-    sys.modules['psutil'] = MagicMock()
+@pytest.fixture
+def temp_models_dir(monkeypatch):
+    # Create a temp directory to act as MODELS_DIR
+    temp_dir = tempfile.mkdtemp()
 
-# Ensure backend can be imported
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-if parent_dir not in sys.path:
-    sys.path.append(parent_dir)
+    # Patch MODELS_DIR in backend.model_manager
+    monkeypatch.setattr("backend.model_manager.MODELS_DIR", temp_dir)
 
-from backend.model_manager import delete_model, MODELS_DIR
+    yield temp_dir
 
-class TestModelManagerSecurity(unittest.TestCase):
-    """Security tests for model manager."""
+    # Cleanup
+    shutil.rmtree(temp_dir)
 
-    def test_delete_model_path_traversal(self):
-        """Test that delete_model prevents path traversal."""
-        # Create a dummy file outside MODELS_DIR
-        vulnerable_file = os.path.abspath("vulnerable_test_file.txt")
-        with open(vulnerable_file, "w") as f:
-            f.write("sensitive data")
+def test_is_safe_path_valid():
+    with tempfile.TemporaryDirectory() as base_dir:
+        file_path = os.path.join(base_dir, "file.txt")
+        assert is_safe_path(base_dir, file_path) is True
 
+def test_is_safe_path_traversal():
+    with tempfile.TemporaryDirectory() as base_dir:
+        # Create a sibling directory
+        sibling_dir = base_dir + "_sibling"
+        os.makedirs(sibling_dir, exist_ok=True)
         try:
-            # Attempt to delete
-            result = delete_model(vulnerable_file)
+            target_path = os.path.join(sibling_dir, "secret.txt")
 
-            # Should fail (return False) and file should still exist
-            self.assertFalse(result, "delete_model should return False for unsafe path")
-            self.assertTrue(os.path.exists(vulnerable_file), "Vulnerable file should not be deleted")
+            # Using .. to go out of base_dir
+            # e.g. /tmp/tmpxxx/../tmpxxx_sibling/secret.txt
+            traversal_path = os.path.join(base_dir, "..", os.path.basename(sibling_dir), "secret.txt")
 
+            # Should be False because it resolves to sibling_dir which is not under base_dir
+            assert is_safe_path(base_dir, traversal_path) is False
         finally:
-            # Cleanup
-            if os.path.exists(vulnerable_file):
-                os.remove(vulnerable_file)
+            if os.path.exists(sibling_dir):
+                shutil.rmtree(sibling_dir)
 
-    def test_delete_model_valid(self):
-        """Test that delete_model works for valid files."""
-        # Ensure models dir exists
-        os.makedirs(MODELS_DIR, exist_ok=True)
+def test_delete_model_valid(temp_models_dir):
+    # Create a file inside temp_models_dir
+    model_path = os.path.join(temp_models_dir, "test_model.gguf")
+    with open(model_path, "w") as f:
+        f.write("data")
 
-        # Create a dummy file inside MODELS_DIR
-        valid_file = os.path.join(MODELS_DIR, "valid_test_model.gguf")
-        with open(valid_file, "w") as f:
-            f.write("dummy model data")
+    assert delete_model(model_path) is True
+    assert not os.path.exists(model_path)
 
-        try:
-            # Attempt to delete
-            result = delete_model(valid_file)
+def test_delete_model_outside(temp_models_dir):
+    # Create a file outside
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        outside_path = tmp.name
+        tmp.write(b"data")
 
-            # Should succeed
-            self.assertTrue(result, "delete_model should return True for valid path")
-            self.assertFalse(os.path.exists(valid_file), "Valid model file should be deleted")
+    try:
+        # Attempt to delete explicit outside path
+        assert delete_model(outside_path) is False
+        assert os.path.exists(outside_path)
+    finally:
+        if os.path.exists(outside_path):
+            os.remove(outside_path)
 
-        finally:
-             if os.path.exists(valid_file):
-                os.remove(valid_file)
+def test_delete_model_traversal(temp_models_dir):
+    # Create a file outside
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        outside_path = tmp.name
+        tmp.write(b"data")
 
-if __name__ == '__main__':
-    unittest.main()
+    try:
+        # Construct path using traversal from temp_models_dir
+        # path = models/../../tmp/file
+
+        rel_path = os.path.relpath(outside_path, temp_models_dir)
+        traversal_path = os.path.join(temp_models_dir, rel_path)
+
+        # Verify our traversal path actually points to the file (sanity check)
+        assert os.path.exists(traversal_path)
+
+        # But delete_model should reject it
+        assert delete_model(traversal_path) is False
+        assert os.path.exists(outside_path)
+    finally:
+        if os.path.exists(outside_path):
+            os.remove(outside_path)
+
+def test_delete_model_nonexistent(temp_models_dir):
+    path = os.path.join(temp_models_dir, "fake.gguf")
+    assert delete_model(path) is False

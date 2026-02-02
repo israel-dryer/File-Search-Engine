@@ -43,6 +43,8 @@ config.ini
 stress_test_output.txt
 *_files.txt
 git_status*.txt
+search_results.txt
+file_index.pkl
 
 # Editors
 .vscode/

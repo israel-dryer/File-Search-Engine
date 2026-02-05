@@ -134,6 +134,7 @@ def run_quick_tests():
         'backend.tests.test_model_manager',
         'backend.tests.test_benchmarks',
         'backend.tests.test_config_and_edge_cases',
+        'backend.tests.test_security',
     ]
     
     for module in quick_modules:

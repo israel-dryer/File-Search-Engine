@@ -38,8 +38,17 @@ const SearchResults = ({ results, aiAnswer }) => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="result-card group/card cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                className="result-card group/card cursor-pointer hover:ring-2 hover:ring-primary/50 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none transition-all"
                 onClick={() => result.file_path && handleOpenFile(result.file_path)}
+                role="button"
+                tabIndex={0}
+                aria-label={`Open ${result.file_name}`}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        result.file_path && handleOpenFile(result.file_path);
+                    }
+                }}
             >
                 {/* File Header */}
                 {result.file_name && (
@@ -57,6 +66,7 @@ const SearchResults = ({ results, aiAnswer }) => {
                             }}
                             className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
                             title="Open file externally"
+                            aria-label="Open file externally"
                         >
                             <ExternalLink className="w-4 h-4" />
                         </button>

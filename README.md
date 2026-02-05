@@ -12,12 +12,16 @@ An intelligent, semantic search engine for your local documents powered by AI em
 - **📂 Multiple File Types**: Supports PDF, DOCX, XLSX, PPTX, and TXT files
 - **🤖 AI Summaries**: Get instant AI-generated summaries of search results
 - **🏠 Fully Local**: Use open-source GGUF models - no API keys required!
-- **☁️ Cloud Option**: Optional OpenAI API integration for enhanced performance
+- **☁️ Multi-Provider Cloud**: Supports OpenAI, Gemini, Anthropic, and Grok APIs
 - **📊 Metadata Tracking**: SQLite database tracks files, sizes, dates, and indexing stats
 - **📜 Search History**: View and re-run previous searches
-- **🎨 Modern UI**: Beautiful, responsive dark/light mode interface
-- **⬇️ Model Manager**: Download and manage open-source LLM models directly in the app
+- **🎨 Modern UI**: Beautiful glassmorphism design with smooth animations (Framer Motion)
+- **⬇️ Model Manager**: Download and manage 25+ open-source LLM models directly in the app
 - **💾 Persistent Storage**: Indexed data saved between sessions
+- **⚡ AI Response Cache**: Instant results for repeated queries via SQLite caching
+- **📁 Folder History**: Quick access to recently indexed folders
+- **♿ Accessibility**: Full keyboard navigation and ARIA labels
+- **🔒 Security**: Path traversal protection for file operations
 
 ## 🏗️ Architecture
 
@@ -32,9 +36,10 @@ An intelligent, semantic search engine for your local documents powered by AI em
 - OpenAI API (optional) - Cloud embeddings
 
 **Frontend**:
-- React 18 - UI framework
-- Vite - Lightning-fast build tool
+- React 19 + Vite - UI framework with HMR
 - TailwindCSS - Utility-first styling
+- Framer Motion - Smooth animations
+- Vitest - Testing framework
 - Axios - HTTP client
 - Lucide Icons - Beautiful icons
 
@@ -413,33 +418,36 @@ This verifies:
 
 ```
 File-Search-Engine-1/
-├── api.py                    # FastAPI server & endpoints
-├── database.py               # SQLite operations
-├── indexing.py               # FAISS indexing logic
-├── search.py                 # Semantic search
-├── file_processing.py        # Text extraction
-├── llm_integration.py        # LLM provider abstraction
-├── model_manager.py          # Model downloads
-├── test_workflow.py          # Automated tests
-├── test_extraction.py        # File extraction test
-├── requirements.txt          # Python dependencies
+├── backend/                  # Python backend code
+│   ├── api.py                # FastAPI server & endpoints
+│   ├── database.py           # SQLite operations
+│   ├── indexing.py           # FAISS indexing logic
+│   ├── search.py             # Semantic search
+│   ├── file_processing.py    # Text extraction
+│   ├── llm_integration.py    # LLM provider abstraction
+│   ├── model_manager.py      # Model downloads (with security validation)
+│   └── tests/                # pytest tests
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx           # Main component
+│   │   ├── components/
+│   │   │   ├── Header.jsx, SearchBar.jsx, SearchResults.jsx
+│   │   │   ├── SettingsModal.jsx, ModelManager.jsx
+│   │   │   └── SearchHistory.jsx, FileList.jsx, BenchmarkResults.jsx
+│   │   └── test/             # Vitest tests
+│   └── package.json
+├── scripts/                  # Utility scripts
+│   ├── start_all.js          # Unified startup script
+│   ├── run_tests.py          # Test runner
+│   └── benchmark_models.py   # Model benchmarking
+├── data/                     # Generated/runtime files
+│   ├── index.faiss           # Vector embeddings
+│   ├── metadata.db           # SQLite database
+│   └── benchmark_results.json
+├── models/                   # Downloaded GGUF models
 ├── config.ini                # User configuration
-├── metadata.db               # SQLite database
-├── index.faiss               # Vector index
-├── models/                   # Downloaded models
-└── frontend/
-    ├── src/
-    │   ├── App.jsx                # Main component
-    │   ├── components/
-    │   │   ├── Header.jsx         # Navigation
-    │   │   ├── SearchBar.jsx      # Search input
-    │   │   ├── SearchResults.jsx  # Results display
-    │   │   ├── SettingsModal.jsx  # Configuration
-    │   │   ├── ModelManager.jsx   # Model downloads
-    │   │   ├── FileList.jsx       # Indexed files
-    │   │   └── SearchHistory.jsx  # Recent searches
-    │   └── lib/utils.js           # Utilities
-    └── package.json               # Node dependencies
+├── requirements.txt          # Python dependencies
+└── package.json              # Node.js scripts
 ```
 
 ## 🔮 Future Enhancements

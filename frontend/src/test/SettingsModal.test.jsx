@@ -12,6 +12,7 @@ import axios from 'axios'
 // Mock axios and window.confirm
 vi.mock('axios')
 global.confirm = vi.fn(() => true)
+global.alert = vi.fn()
 
 // Mock ModelManager component since we test it separately
 vi.mock('../components/ModelManager', () => ({
@@ -107,5 +108,41 @@ describe('SettingsModal Component', () => {
 
         expect(global.confirm).toHaveBeenCalled()
         expect(axios.delete).toHaveBeenCalledWith('http://localhost:8000/api/folders/history')
+    })
+
+    it('closes when Escape key is pressed', () => {
+        const onClose = vi.fn()
+        render(<SettingsModal isOpen={true} onClose={onClose} onSave={vi.fn()} activeModel="" />)
+
+        fireEvent.keyDown(window, { key: 'Escape' })
+        expect(onClose).toHaveBeenCalled()
+    })
+
+    it('closes when clicking outside the modal', () => {
+        const onClose = vi.fn()
+        const { container } = render(<SettingsModal isOpen={true} onClose={onClose} onSave={vi.fn()} activeModel="" />)
+
+        // The backdrop is the outermost div
+        fireEvent.click(container.firstChild)
+        expect(onClose).toHaveBeenCalled()
+    })
+
+    it('does not close when clicking inside the modal', () => {
+        const onClose = vi.fn()
+        render(<SettingsModal isOpen={true} onClose={onClose} onSave={vi.fn()} activeModel="" />)
+
+        const modalContent = screen.getByText('Settings')
+        fireEvent.click(modalContent)
+        expect(onClose).not.toHaveBeenCalled()
+    })
+
+    it('has accessible labels', async () => {
+        render(<SettingsModal isOpen={true} onClose={vi.fn()} onSave={vi.fn()} activeModel="" />)
+        await waitFor(() => screen.getByText('Settings'))
+
+        expect(screen.getByLabelText('Close settings')).toBeDefined()
+
+        await waitFor(() => screen.getByText('C:/Users/test/Documents'))
+        expect(screen.getByLabelText('Remove C:/Users/test/Documents from index')).toBeDefined()
     })
 })
